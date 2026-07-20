@@ -15,6 +15,7 @@ import { CheckoutModal } from './components/CheckoutModal';
 import { GemRainCanvas } from './components/GemRainCanvas';
 import { MotionEnhancer } from './components/MotionEnhancer';
 import { CartFlyEffect } from './components/CartFlyEffect';
+import { GlobalEffects } from './components/GlobalEffects';
 import './App.css';
 
 function AppContent() {
@@ -57,6 +58,7 @@ function AppContent() {
       <GemRainCanvas />
       <MotionEnhancer />
       <CartFlyEffect />
+      <GlobalEffects />
     </div>
   );
 }
