@@ -309,6 +309,7 @@ export const Shop: React.FC = () => {
                   <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{p.category}</span>
                   <h4 style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>{p.name}</h4>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{p.specs.coating || p.specs.metal}</span>
+                  {typeof p.stock === 'number' && <span style={{ fontSize: '0.7rem', color: p.stock > 0 ? '#2d7d46' : '#c0392b', fontWeight: 700 }}>{p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}</span>}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',

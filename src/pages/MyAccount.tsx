@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
-import { User, ShoppingBag, ArrowRight, MapPin, Heart, CreditCard, PackageCheck, ChevronRight, ShieldCheck, LogOut, XCircle } from 'lucide-react';
+import { User, ShoppingBag, ArrowRight, MapPin, Heart, PackageCheck, ChevronRight, ShieldCheck, LogOut, XCircle, Gift, Trash2 } from 'lucide-react';
 
 export const MyAccount: React.FC = () => {
   const { 
@@ -10,8 +10,14 @@ export const MyAccount: React.FC = () => {
     currentUser, 
     loginUser, 
     registerUser, 
-    logoutUser 
+    logoutUser,
+    wishlist,
+    toggleWishlist,
+    products,
+    setSelectedProductId
   } = useStore();
+
+  const [activeSection, setActiveSection] = useState<'orders'|'wishlist'|'address'|'refer'>('orders');
 
   const [isRegister, setIsRegister] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -366,10 +372,10 @@ export const MyAccount: React.FC = () => {
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Your Account</span>
         </div>
         <div className="account-action-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
-          <button onClick={() => setActivePage('orders')} className="account-action"><PackageCheck size={19} /><span>Track Orders</span><ChevronRight size={16} /></button>
-          <button onClick={() => setActivePage('shop')} className="account-action"><Heart size={19} /><span>My Wishlist</span><ChevronRight size={16} /></button>
-          <button className="account-action"><MapPin size={19} /><span>Saved Addresses</span><ChevronRight size={16} /></button>
-          <button className="account-action"><CreditCard size={19} /><span>Payments</span><ChevronRight size={16} /></button>
+          <button onClick={() => setActiveSection('orders')} className="account-action" style={{ borderColor: activeSection==='orders' ? 'var(--gold-primary)' : undefined }}><PackageCheck size={19} /><span>Order History</span><ChevronRight size={16} /></button>
+          <button onClick={() => setActiveSection('wishlist')} className="account-action" style={{ borderColor: activeSection==='wishlist' ? 'var(--gold-primary)' : undefined }}><Heart size={19} /><span>My Wishlist ({wishlist.length})</span><ChevronRight size={16} /></button>
+          <button onClick={() => setActiveSection('address')} className="account-action" style={{ borderColor: activeSection==='address' ? 'var(--gold-primary)' : undefined }}><MapPin size={19} /><span>Saved Address</span><ChevronRight size={16} /></button>
+          <button onClick={() => setActiveSection('refer')} className="account-action" style={{ borderColor: activeSection==='refer' ? 'var(--gold-primary)' : undefined }}><Gift size={19} /><span>Refer & Earn</span><ChevronRight size={16} /></button>
         </div>
       </div>
 
@@ -433,102 +439,123 @@ export const MyAccount: React.FC = () => {
 
         </div>
 
-        {/* Right Side: Orders History */}
-        <div className="glass" style={{ padding: '40px', borderRadius: '8px', border: '1px solid var(--border-light)', backgroundColor: '#ffffff' }}>
-          <h2 style={{ fontSize: '1.4rem', marginBottom: '24px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-primary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-            <ShoppingBag size={20} style={{ color: 'var(--gold-primary)' }} />
-            Order History ({userOrders.length})
-          </h2>
+        {/* Right Side: Dynamic Section Panel */}
+        <div className="glass" style={{ padding: '36px', borderRadius: '8px', border: '1px solid var(--border-light)', backgroundColor: '#ffffff', minHeight: '400px' }}>
 
-          {userOrders.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', color: 'var(--text-muted)' }}>
-                <ShoppingBag size={36} />
+          {/* ── ORDER HISTORY ── */}
+          {activeSection === 'orders' && (<>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-primary)', textTransform: 'uppercase' }}>
+              <ShoppingBag size={19} style={{ color: 'var(--gold-primary)' }} /> Order History ({userOrders.length})
+            </h2>
+            {userOrders.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '50px 24px' }}>
+                <ShoppingBag size={40} style={{ color: 'var(--text-muted)', marginBottom: '16px' }} />
+                <h3 style={{ fontWeight: 400, marginBottom: '8px' }}>No orders yet</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: '20px' }}>Start exploring our premium jewelry collections.</p>
+                <button onClick={() => setActivePage('shop')} className="gold-button" style={{ padding: '10px 28px' }}>Start Shopping</button>
               </div>
-              <h3 style={{ fontSize: '1.3rem', color: 'var(--text-primary)', fontWeight: 400, margin: '0 0 8px 0' }}>No Orders Found</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '24px', maxWidth: '360px', lineHeight: 1.5 }}>
-                You have not placed any orders yet. Discover our premium anti-tarnish and rolled gold jewelry collections.
-              </p>
-              <button onClick={() => setActivePage('shop')} className="gold-button" style={{ padding: '10px 28px' }}>
-                Start Shopping
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {userOrders.map(order => (
-                <div 
-                  key={order.id} 
-                  style={{ 
-                    border: '1px solid var(--border-light)', 
-                    borderRadius: '6px', 
-                    padding: '20px', 
-                    background: 'var(--bg-secondary)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '16px'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                    <div>
-                      <h4 style={{ color: 'var(--text-primary)', fontSize: '1.05rem', margin: 0, fontWeight: 500 }}>Order ID: {order.id}</h4>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                        Placed on {new Date(order.createdAt).toLocaleDateString('en-IN')}
-                      </span>
-                    </div>
-                    
-                    {/* Status Badge */}
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <span style={{
-                        padding: '4px 10px',
-                        borderRadius: '2px',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        background: order.status === 'Delivered' ? 'rgba(46, 204, 113, 0.1)' : order.status === 'Cancelled' ? 'rgba(231, 76, 60, 0.1)' : 'rgba(241, 196, 15, 0.1)',
-                        color: order.status === 'Delivered' ? '#2ecc71' : order.status === 'Cancelled' ? '#e74c3c' : '#b38600',
-                        border: `1px solid ${order.status === 'Delivered' ? '#2ecc71' : order.status === 'Cancelled' ? '#e74c3c' : 'rgba(241, 196, 15, 0.4)'}`
-                      }}>
-                        {order.status}
-                      </span>
-                      
-                      <button 
-                        onClick={() => handleTrackOrderClick(order.id)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--gold-primary)',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          fontSize: '0.85rem',
-                          fontWeight: 500
-                        }}
-                      >
-                        Track <ArrowRight size={14} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Items Brief */}
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', borderTop: '1px solid var(--border-light)', paddingTop: '12px' }}>
-                    {order.items.map((it: any, idx: number) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
-                        <span>{it.product.name} x {it.quantity}</span>
-                        <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>₹ {it.product.price * it.quantity}</span>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                {userOrders.map(order => (
+                  <div key={order.id} style={{ border: '1px solid var(--border-light)', borderRadius: '6px', padding: '18px', background: 'var(--bg-secondary)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '0.95rem' }}>#{order.id}</h4>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{new Date(order.createdAt).toLocaleDateString('en-IN')}</span>
                       </div>
-                    ))}
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <span style={{ padding: '3px 9px', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 600, background: order.status==='Delivered'?'rgba(46,204,113,0.1)':order.status==='Cancelled'?'rgba(231,76,60,0.1)':'rgba(241,196,15,0.1)', color: order.status==='Delivered'?'#2ecc71':order.status==='Cancelled'?'#e74c3c':'#b38600', border: `1px solid ${order.status==='Delivered'?'#2ecc71':order.status==='Cancelled'?'#e74c3c':'rgba(241,196,15,0.4)'}` }}>{order.status}</span>
+                        <button onClick={() => handleTrackOrderClick(order.id)} style={{ background:'none',border:'none',color:'var(--gold-primary)',cursor:'pointer',display:'flex',alignItems:'center',gap:'4px',fontSize:'0.82rem',fontWeight:500 }}>Track <ArrowRight size={13} /></button>
+                      </div>
+                    </div>
+                    {order.items.map((it:any,idx:number)=>(<div key={idx} style={{display:'flex',justifyContent:'space-between',fontSize:'0.85rem',color:'var(--text-secondary)',padding:'4px 0',borderTop:idx===0?'1px solid var(--border-light)':undefined}}><span>{it.product.name} x{it.quantity}</span><span style={{color:'var(--text-primary)',fontWeight:500}}>₹{it.product.price*it.quantity}</span></div>))}
+                    <div style={{ marginTop:'10px', display:'flex', justifyContent:'flex-end' }}><span style={{ color:'var(--gold-primary)', fontWeight:600 }}>Total: ₹{order.totalAmount}</span></div>
                   </div>
+                ))}
+              </div>
+            )}
+          </>)}
 
-                  {/* Totals */}
-                  <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Payment Method: <strong style={{ color: 'var(--text-secondary)' }}>{order.paymentMethod} ({order.paymentStatus})</strong></span>
-                    <span style={{ color: 'var(--gold-primary)', fontWeight: 600, fontSize: '1rem' }}>Total: ₹ {order.totalAmount}</span>
-                  </div>
-                </div>
-              ))}
+          {/* ── WISHLIST ── */}
+          {activeSection === 'wishlist' && (<>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-primary)', textTransform: 'uppercase' }}>
+              <Heart size={19} style={{ color: 'var(--gold-primary)' }} /> My Wishlist ({wishlist.length})
+            </h2>
+            {wishlist.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '50px 24px' }}>
+                <Heart size={40} style={{ color: 'var(--text-muted)', marginBottom: '16px' }} />
+                <h3 style={{ fontWeight: 400, marginBottom: '8px' }}>Your wishlist is empty</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: '20px' }}>Heart products you love to save them here.</p>
+                <button onClick={() => setActivePage('shop')} className="gold-button" style={{ padding: '10px 28px' }}>Browse Collection</button>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '18px' }}>
+                {wishlist.map(pid => {
+                  const prod = products.find(p => p.id === pid);
+                  if (!prod) return null;
+                  return (
+                    <div key={pid} style={{ border: '1px solid var(--border-light)', borderRadius: '8px', overflow: 'hidden', background: 'var(--bg-secondary)' }}>
+                      <div onClick={() => { setSelectedProductId(prod.id); setActivePage('product-details'); }} style={{ height: '160px', backgroundImage: `url(${prod.image})`, backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'pointer' }} />
+                      <div style={{ padding: '12px' }}>
+                        <p style={{ fontSize: '0.82rem', fontWeight: 500, margin: '0 0 4px 0', color: 'var(--text-primary)', lineHeight: 1.3 }}>{prod.name}</p>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--gold-primary)', fontWeight: 700, margin: '0 0 10px 0' }}>₹{prod.price.toLocaleString('en-IN')}</p>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button onClick={() => { setSelectedProductId(prod.id); setActivePage('product-details'); }} style={{ flex: 1, padding: '6px', fontSize: '0.72rem', fontWeight: 600, background: 'var(--gold-primary)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>View</button>
+                          <button onClick={() => toggleWishlist(pid)} style={{ padding: '6px 10px', background: 'none', border: '1px solid var(--border-light)', borderRadius: '4px', cursor: 'pointer', color: '#e74c3c' }}><Trash2 size={13} /></button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>)}
+
+          {/* ── SAVED ADDRESS ── */}
+          {activeSection === 'address' && (<>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-primary)', textTransform: 'uppercase' }}>
+              <MapPin size={19} style={{ color: 'var(--gold-primary)' }} /> Saved Addresses
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ border: '2px solid var(--gold-primary)', borderRadius: '8px', padding: '24px', background: 'var(--bg-secondary)', position: 'relative' }}>
+                <span style={{ position: 'absolute', top: '12px', right: '14px', fontSize: '0.68rem', fontWeight: 700, color: 'var(--gold-primary)', background: 'var(--gold-light)', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>Default</span>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', color: 'var(--text-primary)' }}>{currentUser?.name}</h4>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.7, margin: 0 }}>
+                  {currentUser?.addressLine}<br />
+                  {currentUser?.city}, {currentUser?.state} — {currentUser?.pincode}<br />
+                  India<br />
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>📞 +91 {currentUser?.phone}</span>
+                </p>
+              </div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center' }}>To update your address, please contact us via WhatsApp or email.</p>
             </div>
-          )}
+          </>)}
+
+          {/* ── REFER & EARN ── */}
+          {activeSection === 'refer' && (<>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-primary)', textTransform: 'uppercase' }}>
+              <Gift size={19} style={{ color: 'var(--gold-primary)' }} /> Refer & Earn
+            </h2>
+            <div style={{ textAlign: 'center', padding: '20px 0 10px' }}>
+              <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'var(--gold-light)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold-primary)', marginBottom: '18px' }}><Gift size={32} /></div>
+              <h3 style={{ fontWeight: 400, fontSize: '1.4rem', marginBottom: '10px' }}>Share the Love, Earn Rewards</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '400px', margin: '0 auto 28px', lineHeight: 1.6 }}>Refer a friend to Maa Diaries and earn ₹200 store credit when they place their first order!</p>
+              <div style={{ background: 'var(--bg-secondary)', border: '1px dashed var(--gold-primary)', borderRadius: '8px', padding: '20px', marginBottom: '24px', maxWidth: '340px', margin: '0 auto 24px' }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Your Referral Code</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--gold-primary)', letterSpacing: '0.15em', margin: 0 }}>MD{currentUser?.phone?.slice(-4) || 'XXXX'}</p>
+              </div>
+              <button onClick={() => { navigator.clipboard.writeText(`MD${currentUser?.phone?.slice(-4)}`); }} className="gold-button" style={{ padding: '10px 32px' }}>Copy Code</button>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px', marginTop: '32px' }}>
+                {[{label:'Friends Referred',val:'0'},{label:'Rewards Earned',val:'₹0'},{label:'Pending Rewards',val:'₹0'}].map(s=>(
+                  <div key={s.label} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '16px' }}>
+                    <p style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--gold-primary)', margin: '0 0 4px 0' }}>{s.val}</p>
+                    <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', margin: 0 }}>{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>)}
+
         </div>
       </div>
 

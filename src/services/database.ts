@@ -87,6 +87,8 @@ const mapProduct = (row: any): Product => ({
     finish: ''
   },
   isFeatured: Boolean(row.is_featured)
+  ,stock: typeof row.stock === 'number' ? row.stock : undefined
+  ,sku: row.sku || undefined
 });
 
 const mapOrder = (row: any): Order => ({
@@ -216,6 +218,8 @@ export const databaseService = {
         stone_options: productData.stoneOptions,
         specs: productData.specs,
         is_featured: productData.isFeatured || false
+        ,stock: productData.stock ?? 0
+        ,sku: productData.sku || null
       });
     if (error) throw error;
     return newProduct;
@@ -242,6 +246,8 @@ export const databaseService = {
         stone_options: updatedProduct.stoneOptions,
         specs: updatedProduct.specs,
         is_featured: updatedProduct.isFeatured || false
+        ,stock: updatedProduct.stock ?? 0
+        ,sku: updatedProduct.sku || null
       })
       .eq('id', updatedProduct.id);
     if (error) throw error;

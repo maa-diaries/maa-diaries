@@ -20,6 +20,8 @@ export interface Product {
     finish: string;
   };
   isFeatured?: boolean;
+  stock?: number;
+  sku?: string;
 }
 
 export const INITIAL_PRODUCTS: Product[] = [

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
+import { siteSettingsService } from '../services/siteSettings';
 import { 
   ArrowRight, Award, ShieldCheck, Heart, 
   Truck, MessageSquare, Clipboard, Check, Star
@@ -8,6 +9,7 @@ export const Home: React.FC = () => {
   const { setActivePage, setShopCategory, products, toggleWishlist, wishlist, setSelectedProductId } = useStore();
   const [activeSlide, setActiveSlide] = useState(0);
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
+  const [siteSettings] = useState(() => siteSettingsService.get());
 
   const handleProductClick = (id: string) => {
     setSelectedProductId(id);
@@ -89,10 +91,10 @@ export const Home: React.FC = () => {
   // Hero Slides
   const heroSlides = [
     {
-      image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=1200&q=80',
-      title: 'Anti-Tarnish Elegance',
-      subtitle: 'Premium 18k Rolled Gold',
-      desc: 'Beautifully crafted jewelry micro-plated with a tarnish-resistant polymer seal. Designed for daily wear, sweat, and showers.'
+      image: siteSettings.heroImage,
+      title: siteSettings.heroTitle,
+      subtitle: siteSettings.heroSubtitle,
+      desc: siteSettings.heroDescription
     },
     {
       image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=1200&q=80',
@@ -145,7 +147,7 @@ export const Home: React.FC = () => {
 
   const handleWhatsAppChat = () => {
     const text = encodeURIComponent("Hello! I am browsing the Maa Diaries website and would like some assistance.");
-    window.open(`https://wa.me/918448229528?text=${text}`, '_blank');
+    window.open(`https://wa.me/${siteSettings.whatsapp}?text=${text}`, '_blank');
   };
 
   return (

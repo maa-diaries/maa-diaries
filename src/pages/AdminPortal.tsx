@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { databaseService } from '../services/database';
+import { isSupabaseConfigured, supabase } from '../services/supabase';
+import { couponsService, type Coupon } from '../services/coupons';
+import { siteSettingsService, type SiteSettings } from '../services/siteSettings';
 import type { Order } from '../services/database';
 import type { Product } from '../data/products';
 import { 
@@ -34,7 +37,9 @@ export const AdminPortal: React.FC = () => {
 
   const availableCategories = categories;
 
-  const [pin, setPin] = useState('');
+  const [pin, setPin] = useState(''); // retained only while the legacy keypad is hidden below
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pinError, setPinError] = useState('');
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
@@ -50,6 +55,11 @@ export const AdminPortal: React.FC = () => {
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
 
   const [newCatInput, setNewCatInput] = useState('');
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponValue, setCouponValue] = useState(10);
+  const [couponMinOrder, setCouponMinOrder] = useState(0);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => siteSettingsService.get());
 
   // Product CRUD states
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -61,6 +71,8 @@ export const AdminPortal: React.FC = () => {
   const [prodOriginalPrice, setProdOriginalPrice] = useState(0);
   const [prodDiscount, setProdDiscount] = useState(0);
   const [prodPrice, setProdPrice] = useState(0);
+  const [prodStock, setProdStock] = useState(0);
+  const [prodSku, setProdSku] = useState('');
   const [prodImage, setProdImage] = useState(SAMPLE_JEWELRY_IMAGES[0]);
   const [prodDesc, setProdDesc] = useState('');
   const [prodPlating, setProdPlating] = useState('18k Rolled Gold Micro-Plating');
@@ -106,27 +118,38 @@ export const AdminPortal: React.FC = () => {
     }
   };
 
-  // Authenticate PIN
-  const handlePinSubmit = (e: React.FormEvent) => {
+  // No passcode is shipped to the browser; the owner signs in with Supabase Auth.
+  const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pin === '1947') {
+    setPinError('');
+    if (!isSupabaseConfigured) {
+      setPinError('Admin authentication needs Supabase configuration.');
+      return;
+    }
+    setIsPending(true);
+    const { error } = await supabase.auth.signInWithPassword({ email: adminEmail.trim(), password: adminPassword });
+    setIsPending(false);
+    if (!error) {
       setIsAuthenticated(true);
-      setPinError('');
     } else {
-      setPinError('Incorrect Secret Passcode');
-      setPin('');
+      setPinError('Unable to sign in. Check your admin email and password.');
     }
   };
 
-  const handleKeyPress = (num: string) => {
-    if (pin.length < 4) {
-      setPin(prev => prev + num);
-    }
-  };
+  // Legacy keypad handlers remain only for the hidden compatibility markup.
+  const handleKeyPress = (num: string) => setPin(prev => `${prev}${num}`.slice(0, 4));
+  const handleClear = () => setPin('');
 
-  const handleClear = () => {
-    setPin('');
-  };
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    supabase.auth.getSession().then(({ data }: any) => setIsAuthenticated(Boolean(data.session)));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event: any, session: any) => setIsAuthenticated(Boolean(session)));
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => { if (isAuthenticated) setCoupons(couponsService.list()); }, [isAuthenticated]);
+  const saveCoupons = (next: Coupon[]) => { setCoupons(next); couponsService.save(next); };
+  const addCoupon = (e: React.FormEvent) => { e.preventDefault(); const code = couponCode.trim().toUpperCase(); if (!code) return; if (coupons.some(c => c.code === code)) { alert('This coupon code already exists.'); return; } saveCoupons([...coupons, { code, type: 'percent', value: couponValue, minOrder: couponMinOrder, active: true }]); setCouponCode(''); setCouponValue(10); setCouponMinOrder(0); };
 
   // Mock upload simulator
   const triggerMockUpload = () => {
@@ -167,6 +190,8 @@ export const AdminPortal: React.FC = () => {
         price: prodPrice,
         originalPrice: prodOriginalPrice || prodPrice,
         discount: prodDiscount || 0,
+        stock: prodStock,
+        sku: prodSku || undefined,
         rating: 5.0,
         reviewsCount: 0,
         image: prodImage,
@@ -206,6 +231,8 @@ export const AdminPortal: React.FC = () => {
         price: prodPrice,
         originalPrice: prodOriginalPrice || prodPrice,
         discount: prodDiscount || 0,
+        stock: prodStock,
+        sku: prodSku || undefined,
         image: prodImage,
         metalOptions: [prodPlating],
         stoneOptions: [prodTarnish],
@@ -250,6 +277,8 @@ export const AdminPortal: React.FC = () => {
     setProdOriginalPrice(p.originalPrice || p.price);
     setProdDiscount(p.discount || 0);
     setProdPrice(p.price);
+    setProdStock(p.stock ?? 0);
+    setProdSku(p.sku || '');
     setProdImage(p.image);
     setProdDesc(p.description);
     setProdPlating(p.metalOptions[0] || '');
@@ -266,6 +295,8 @@ export const AdminPortal: React.FC = () => {
     setProdOriginalPrice(0);
     setProdDiscount(0);
     setProdPrice(0);
+    setProdStock(0);
+    setProdSku('');
     setProdImage(SAMPLE_JEWELRY_IMAGES[0]);
     setProdDesc('');
     setProdPlating('18k Rolled Gold Micro-Plating');
@@ -468,7 +499,7 @@ export const AdminPortal: React.FC = () => {
               Maa Diaries Vault Controls
             </h3>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-              Enter secure passcode to authorize management environment.
+              Sign in with the dedicated Supabase admin account.
             </p>
           </div>
 
@@ -498,9 +529,12 @@ export const AdminPortal: React.FC = () => {
 
           {pinError && <span style={{ fontSize: '0.78rem', color: '#832729', fontWeight: 500 }}>{pinError}</span>}
 
+          <input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder="Admin email" autoComplete="email" required style={{ width: '100%', padding: '13px', border: '1px solid var(--border-light)', borderRadius: '7px', background: 'var(--bg-secondary)' }} />
+          <input type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} placeholder="Password" autoComplete="current-password" required style={{ width: '100%', padding: '13px', border: '1px solid var(--border-light)', borderRadius: '7px', background: 'var(--bg-secondary)' }} />
+
           {/* Keypad */}
           <div style={{
-            display: 'grid',
+            display: 'none',
             gridTemplateColumns: 'repeat(3, 1fr)',
             gap: '12px',
             width: '100%'
@@ -576,7 +610,7 @@ export const AdminPortal: React.FC = () => {
               Enter
             </button>
           </div>
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Default PIN: 1947</span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Use the single secure owner account configured in Supabase Auth.</span>
         </form>
       </div>
     );
@@ -628,7 +662,7 @@ export const AdminPortal: React.FC = () => {
           <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Global Production Admin Panel</span>
         </div>
         <button 
-          onClick={() => setIsAuthenticated(false)}
+          onClick={async () => { await supabase.auth.signOut(); setIsAuthenticated(false); }}
           className="gold-button-outline"
           style={{ padding: '8px 16px', fontSize: '0.8rem' }}
         >
@@ -856,7 +890,7 @@ export const AdminPortal: React.FC = () => {
               </div>
 
               {/* Set Price & Discount */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '20px' }}>
                 <div className="input-group">
                   <label style={{ fontSize: '0.72rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '8px' }}>Original Price (₹)</label>
                   <input 
@@ -889,10 +923,14 @@ export const AdminPortal: React.FC = () => {
                     style={{ width: '100%', border: '1px solid var(--border-light)', padding: '12px', borderRadius: '6px', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none', fontWeight: 600 }}
                   />
                 </div>
+                <div className="input-group">
+                  <label style={{ fontSize: '0.72rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '8px' }}>Stock Available</label>
+                  <input type="number" min="0" required value={prodStock} onChange={e => setProdStock(Math.max(0, parseInt(e.target.value) || 0))} style={{ width: '100%', border: '1px solid var(--border-light)', padding: '12px', borderRadius: '6px', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none', fontWeight: 600 }} />
+                </div>
               </div>
 
               {/* Upload product images */}
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', alignItems: 'flex-end' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '20px', alignItems: 'flex-end' }}>
                 <div className="input-group">
                   <label style={{ fontSize: '0.72rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '8px' }}>Product Image URL</label>
                   <input 
@@ -902,6 +940,10 @@ export const AdminPortal: React.FC = () => {
                     onChange={e => setProdImage(e.target.value)} 
                     style={{ width: '100%', border: '1px solid var(--border-light)', padding: '12px', borderRadius: '6px', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none' }}
                   />
+                </div>
+                <div className="input-group">
+                  <label style={{ fontSize: '0.72rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '8px' }}>SKU</label>
+                  <input type="text" value={prodSku} onChange={e => setProdSku(e.target.value)} placeholder="MD-EAR-001" style={{ width: '100%', border: '1px solid var(--border-light)', padding: '12px', borderRadius: '6px', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none' }} />
                 </div>
                 <button
                   type="button"
@@ -1899,6 +1941,22 @@ export const AdminPortal: React.FC = () => {
                 </div>
               </div>
             </div>
+            <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid var(--border-light)' }}>
+              <h5 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '14px' }}>Coupon & Promotion Manager</h5>
+              <form onSubmit={addCoupon} style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr auto', gap: '10px', alignItems: 'end' }}>
+                <input required value={couponCode} onChange={e => setCouponCode(e.target.value)} placeholder="Code e.g. FESTIVE20" style={{ border: '1px solid var(--border-light)', padding: '10px', borderRadius: '6px' }} />
+                <input type="number" min="1" max="100" value={couponValue} onChange={e => setCouponValue(Number(e.target.value))} placeholder="Discount %" style={{ border: '1px solid var(--border-light)', padding: '10px', borderRadius: '6px' }} />
+                <input type="number" min="0" value={couponMinOrder} onChange={e => setCouponMinOrder(Number(e.target.value))} placeholder="Min order ₹" style={{ border: '1px solid var(--border-light)', padding: '10px', borderRadius: '6px' }} />
+                <button className="gold-button" style={{ padding: '10px 16px', fontSize: '.75rem' }}>Create</button>
+              </form>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '16px' }}>{coupons.map(c => <div key={c.code} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', border: '1px solid var(--border-light)', borderRadius: '6px', opacity: c.active ? 1 : .5 }}><strong>{c.code}</strong><span>{c.value}% off · ₹{c.minOrder}+ </span><button onClick={() => saveCoupons(coupons.map(item => item.code === c.code ? { ...item, active: !item.active } : item))} style={{ cursor: 'pointer', color: 'var(--gold-primary)' }}>{c.active ? 'Disable' : 'Enable'}</button><button onClick={() => saveCoupons(coupons.filter(item => item.code !== c.code))} style={{ cursor: 'pointer', color: '#c0392b' }}>×</button></div>)}</div>
+            </div>
+            <form onSubmit={(e) => { e.preventDefault(); siteSettingsService.save(siteSettings); alert('Homepage, contact and SEO settings saved.'); }} style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid var(--border-light)' }}>
+              <h5 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '14px' }}>Homepage, Store & SEO Controls</h5>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px' }}>
+                {[['Hero title','heroTitle'],['Hero subtitle','heroSubtitle'],['WhatsApp number','whatsapp'],['Free shipping threshold','freeShippingThreshold'],['SEO title','seoTitle'],['SEO description','seoDescription'],['Hero image URL','heroImage'],['Hero description','heroDescription']].map(([label, field]) => <label key={field} style={{ fontSize: '.72rem', color: 'var(--text-secondary)' }}>{label}<input value={String(siteSettings[field as keyof SiteSettings])} onChange={e => setSiteSettings({ ...siteSettings, [field]: field === 'freeShippingThreshold' ? Number(e.target.value) : e.target.value })} style={{ display: 'block', width: '100%', marginTop: '5px', padding: '10px', border: '1px solid var(--border-light)', borderRadius: '6px' }} /></label>)}
+              </div><button className="gold-button" style={{ marginTop: '14px', padding: '10px 16px', fontSize: '.75rem' }}>Save Website Controls</button>
+            </form>
           </div>
         </div>
       )}

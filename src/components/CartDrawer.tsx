@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { X, Trash2, Plus, Minus, ArrowRight, Tag } from 'lucide-react';
+import { couponsService } from '../services/coupons';
 
 export const CartDrawer: React.FC = () => {
   const { 
@@ -21,9 +22,10 @@ export const CartDrawer: React.FC = () => {
 
   const handleApplyCoupon = (e: React.FormEvent) => {
     e.preventDefault();
-    if (couponCode.toUpperCase() === 'AURA10') {
-      setDiscountPercent(10);
-      setCouponSuccess('10% VIP Discount Applied!');
+    const coupon = couponsService.validate(couponCode, subtotal);
+    if (coupon) {
+      setDiscountPercent(coupon.type === 'percent' ? coupon.value : Math.round((coupon.value / Math.max(subtotal, 1)) * 100));
+      setCouponSuccess('Offer applied successfully!');
       setCouponError('');
     } else {
       setCouponError('Invalid VIP Code');
