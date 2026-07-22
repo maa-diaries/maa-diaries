@@ -579,7 +579,7 @@ export const Home: React.FC = () => {
           </button>
         </div>
 
-        <div ref={newArrivalsRef} className="home-product-carousel" style={{ display: 'flex', gap: '16px', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '8px', scrollbarWidth: 'none' }}>
+        <div ref={newArrivalsRef} className="home-product-carousel" style={{ display: 'flex', gap: '12px', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '8px', scrollbarWidth: 'none' }}>
           {newArrivals.map((prod) => (
             <ProductCard key={prod.id} product={prod} />
           ))}
@@ -598,7 +598,7 @@ export const Home: React.FC = () => {
           </button>
         </div>
 
-        <div ref={bestSellersRef} className="home-product-carousel" style={{ display: 'flex', gap: '16px', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '8px', scrollbarWidth: 'none' }}>
+        <div ref={bestSellersRef} className="home-product-carousel" style={{ display: 'flex', gap: '12px', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '8px', scrollbarWidth: 'none' }}>
           {bestSellers.map((prod) => (
             <ProductCard key={prod.id} product={prod} showRating />
           ))}
@@ -617,7 +617,7 @@ export const Home: React.FC = () => {
           </button>
         </div>
 
-        <div ref={trendingRef} className="home-product-carousel" style={{ display: 'flex', gap: '16px', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '8px', scrollbarWidth: 'none' }}>
+        <div ref={trendingRef} className="home-product-carousel" style={{ display: 'flex', gap: '12px', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '8px', scrollbarWidth: 'none' }}>
           {trending.map((prod) => (
             <ProductCard key={prod.id} product={prod} badge={{ label: '🔥 TRENDING', color: 'rgba(131,39,41,0.88)' }} />
           ))}
