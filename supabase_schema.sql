@@ -47,11 +47,7 @@ RETURNS boolean
 LANGUAGE sql
 SECURITY DEFINER
 AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM auth.users
-    WHERE id = auth.uid()
-      AND email = 'founder@maadiaries.com'
-  );
+  SELECT (auth.jwt() ->> 'email') = 'founder@maadiaries.com';
 $$;
 
 
@@ -136,7 +132,7 @@ ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 -- Users can read their own orders (by email); admin can read all
 CREATE POLICY "orders_select_own_or_admin" ON public.orders
   FOR SELECT USING (
-    customer_email = (SELECT email FROM auth.users WHERE id = auth.uid())
+    customer_email = (auth.jwt() ->> 'email')
     OR public.is_admin()
   );
 -- Anyone authenticated can place an order (insert)
@@ -195,19 +191,19 @@ ALTER TABLE public.registered_users ENABLE ROW LEVEL SECURITY;
 -- Users can read their own profile; admin can read all
 CREATE POLICY "users_select_own_or_admin" ON public.registered_users
   FOR SELECT USING (
-    email = (SELECT email FROM auth.users WHERE id = auth.uid())
+    email = (auth.jwt() ->> 'email')
     OR public.is_admin()
   );
 -- Users can insert their own profile during registration
 CREATE POLICY "users_insert_own" ON public.registered_users
   FOR INSERT WITH CHECK (
-    email = (SELECT email FROM auth.users WHERE id = auth.uid())
+    email = (auth.jwt() ->> 'email')
     OR public.is_admin()
   );
 -- Users can update their own profile
 CREATE POLICY "users_update_own_or_admin" ON public.registered_users
   FOR UPDATE USING (
-    email = (SELECT email FROM auth.users WHERE id = auth.uid())
+    email = (auth.jwt() ->> 'email')
     OR public.is_admin()
   );
 -- Only admin can delete users
