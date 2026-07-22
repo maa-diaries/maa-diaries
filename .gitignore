@@ -31,4 +31,6 @@ dist-ssr
 # Audit / dev-only docs
 PRODUCTION_AUDIT_ISSUES.md
 OPEN_ISSUES.md
+scratch/
+
 

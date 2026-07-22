@@ -640,8 +640,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       body: JSON.stringify({ type, payload })
     });
     if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      throw new Error(data.error || `Email server response failed with code: ${response.status}`);
+      let errorMessage = `Email server response failed with code: ${response.status}`;
+      try {
+        const text = await response.text();
+        try {
+          const data = JSON.parse(text);
+          if (data && data.error) {
+            errorMessage = data.error;
+          }
+        } catch {
+          if (text && text.length < 300) {
+            errorMessage = text;
+          }
+        }
+      } catch (e) {}
+      throw new Error(errorMessage);
     }
   };
 

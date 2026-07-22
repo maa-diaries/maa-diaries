@@ -19,51 +19,50 @@ function escapeHtml(str: string): string {
 }
 
 export default async function handler(req: any, res: any) {
-  // Rate limit: 5 requests per minute per IP (email sending is expensive)
-  const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || 'unknown';
-  const { allowed } = await rateLimit(`send-email:${ip}`, 5, 60000);
-  if (!allowed) {
-    return res.status(429).json({ error: 'Too many requests. Please try again later.' });
-  }
-
-  // CORS Headers — restrict to configured origin
-  const allowedOrigin = process.env.ALLOWED_ORIGIN || process.env.BASE_URL || 'http://localhost:5173';
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Content-Type'
-  );
-
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
-
-  const { type, payload } = req.body;
-  if (!type || !payload) {
-    return res.status(400).json({ error: 'Missing type or payload' });
-  }
-
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.error('RESEND_API_KEY is not defined in environment variables.');
-    return res.status(500).json({ error: 'Resend API key not configured on server.' });
-  }
-
-  // ─── Email Address Configuration ───────────────────────────────
-  // Each email type uses a dedicated sender/recipient for proper routing
-  const infoEmail = process.env.INFO_EMAIL || 'info@maadiaries.com';
-  const ordersEmail = process.env.ORDERS_EMAIL || 'support@maadiaries.com';
-  const deliveryEmail = process.env.DELIVERY_EMAIL || 'support@maadiaries.com';
-  const supportEmail = process.env.SUPPORT_EMAIL || 'support@maadiaries.com';
-
   try {
+    // Rate limit: 5 requests per minute per IP (email sending is expensive)
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || 'unknown';
+    const { allowed } = await rateLimit(`send-email:${ip}`, 5, 60000);
+    if (!allowed) {
+      return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    }
+
+    // CORS Headers — restrict to configured origin
+    const allowedOrigin = process.env.ALLOWED_ORIGIN || process.env.BASE_URL || 'http://localhost:5173';
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type'
+    );
+
+    if (req.method === 'OPTIONS') {
+      res.status(200).end();
+      return;
+    }
+
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method Not Allowed' });
+    }
+
+    const { type, payload } = req.body;
+    if (!type || !payload) {
+      return res.status(400).json({ error: 'Missing type or payload' });
+    }
+
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      console.error('RESEND_API_KEY is not defined in environment variables.');
+      return res.status(500).json({ error: 'Resend API key not configured on server.' });
+    }
+
+    // ─── Email Address Configuration ───────────────────────────────
+    // Each email type uses a dedicated sender/recipient for proper routing
+    const infoEmail = process.env.INFO_EMAIL || 'info@maadiaries.com';
+    const ordersEmail = process.env.ORDERS_EMAIL || 'support@maadiaries.com';
+    const deliveryEmail = process.env.DELIVERY_EMAIL || 'support@maadiaries.com';
+    const supportEmail = process.env.SUPPORT_EMAIL || 'support@maadiaries.com';
     // Validate order against Supabase before sending email to prevent relay abuse (C6/H3)
     if (type === 'order') {
       const { order } = payload;
