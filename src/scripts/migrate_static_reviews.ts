@@ -1,10 +1,17 @@
-import { supabase } from '../services/supabase';
-import { generateId } from '../utils/idGenerator'; // assume exists or use simple function
+import { createClient } from '@supabase/supabase-js';
+
+function generateId() {
+  return Math.random().toString(36).substring(2, 10);
+}
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Static reviews as displayed on Home page
 const staticReviews = [
   {
-    productId: 'jhumke-01', // example product id, adjust as needed
+    productId: 'jhumke-01',
     userName: 'Aishwarya R.',
     rating: 5,
     comment: 'Stunning anti-tarnish payals! I was skeptical but I have been wearing them daily in the shower and there is zero change in shine. Absolutely love Maa Diaries.'
@@ -24,11 +31,10 @@ const staticReviews = [
 ];
 
 async function migrate() {
-  if (!process.env.VITE_SUPABASE_URL && !process.env.SUPABASE_URL) {
+  if (!supabaseUrl || !supabaseAnonKey) {
     console.error('Supabase not configured. Set environment variables.');
     process.exit(1);
   }
-
   for (const rev of staticReviews) {
     const id = `rev-${generateId()}`;
     const createdAt = new Date().toISOString();

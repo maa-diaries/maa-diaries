@@ -6,6 +6,7 @@ import {
   Truck, MessageSquare, Clipboard, Check, Star
 } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
+import { databaseService } from '../services/database';
 
 const defaultCategories = [
   { id: 'earrings', name: 'Earrings', desc: 'Western & Traditional', image: 'https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=400&q=80' },
@@ -28,11 +29,19 @@ export const Home: React.FC = () => {
     handler(mq);
     return () => mq.removeEventListener('change', handler);
   }, []);
+
+  // Load reviews for home page
+  useEffect(() => {
+    databaseService.getAllReviews()
+      .then(setHomeReviews)
+      .catch(console.error);
+  }, []);
   const { setShopCategory, products, siteSettings, coupons, cart } = useStore();
   const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const [activeSlide, setActiveSlide] = useState(0);
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
   const [igModalUrl, setIgModalUrl] = useState<string | null>(null);
+  const [homeReviews, setHomeReviews] = useState<any[]>([]);
 
   useEffect(() => {
     document.title = siteSettings.seoTitle;
@@ -651,24 +660,21 @@ export const Home: React.FC = () => {
         </div>
 
         <div ref={reviewsRef} className="product-grid-scroll reviews-carousel" style={{ display: 'flex', gap: '20px', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '8px', scrollbarWidth: 'none', paddingInline: 'calc(50% - 250px)' }}>
-          {[
-            { name: 'Aishwarya R.', city: 'Mumbai', text: 'Stunning anti-tarnish payals! I was skeptical but I have been wearing them daily in the shower and there is zero change in shine. Absolutely love Maa Diaries.', rating: 5 },
-            { name: 'Megha S.', city: 'Delhi', text: 'The metal clutchers are so strong and hold my thick hair perfectly. The rose theme packaging felt incredibly premium and luxury. Will buy again!', rating: 5 },
-            { name: 'Kavita J.', city: 'Bangalore', text: 'Highly recommend the Kashmiri Jhumke. Heavy details but extremely lightweight on the ears. Hypoallergenic claim is true—no itchiness at all!', rating: 5 }
-          ].map((rev, idx) => (
-            <div key={idx} className="glass" style={{ flex: '0 0 500px', minWidth: '280px', maxWidth: '500px', scrollSnapAlign: 'center', padding: '30px', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', gap: '4px', color: '#f1c40f' }}>
-                {[...Array(rev.rating)].map((_, i) => <Star key={i} size={16} fill="#f1c40f" />)}
-              </div>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.6, fontStyle: 'italic' }}>
-                "{rev.text}"
-              </p>
-              <div>
-                <h4 style={{ color: 'var(--text-primary)', fontSize: '0.95rem', margin: 0 }}>{rev.name}</h4>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{rev.city}</span>
-              </div>
+          {<div ref={reviewsRef} className="product-grid-scroll reviews-carousel" style={{ display: 'flex', gap: '20px', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '8px', scrollbarWidth: 'none', paddingInline: 'calc(50% - 250px)' }}>
+        {homeReviews.map((rev, idx) => (
+          <div key={rev.id} className="glass" style={{ flex: '0 0 500px', minWidth: '280px', maxWidth: '500px', scrollSnapAlign: 'center', padding: '30px', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', gap: '4px', color: '#f1c40f' }}>
+              {[...Array(rev.rating)].map((_, i) => <Star key={i} size={16} fill="#f1c40f" />)}
             </div>
-          ))}
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.6, fontStyle: 'italic' }}>
+              {rev.comment}
+            </p>
+            <div>
+              <h4 style={{ color: 'var(--text-primary)', fontSize: '0.95rem', margin: 0 }}>{rev.userName}</h4>
+            </div>
+          </div>
+        ))}
+      </div>
         </div>
       </div>
 
