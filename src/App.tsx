@@ -12,6 +12,7 @@ import { CartFlyEffect } from './components/CartFlyEffect';
 import { GlobalEffects } from './components/GlobalEffects';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieConsent } from './components/CookieConsent';
+import { ResetPasswordModal } from './components/ResetPasswordModal';
 
 const Home = lazy(() => import('./pages/Home').then(m => ({ default: m.Home })));
 const Shop = lazy(() => import('./pages/Shop').then(m => ({ default: m.Shop })));
@@ -117,6 +118,7 @@ function AppContent() {
 
       <CartDrawer />
       <CheckoutModal />
+      <ResetPasswordModal />
       <GemRainCanvas />
       <MotionEnhancer />
       <CartFlyEffect />

@@ -88,6 +88,9 @@ interface StoreContextType {
   loginUser: (emailOrPhone: string, password?: string) => Promise<boolean>;
   registerUser: (profile: UserProfile, password?: string, skipVerification?: boolean) => Promise<{ success: boolean; needsVerification?: boolean; verificationCode?: string; message?: string }>;
   resetPassword: (email: string) => Promise<{ success: boolean; message: string }>;
+  updatePassword: (password: string) => Promise<{ success: boolean; message: string }>;
+  resetPasswordOpen: boolean;
+  setResetPasswordOpen: (open: boolean) => void;
   cancelOrder: (orderId: string) => Promise<boolean>;
   logoutUser: () => void;
   getProductReviews: (productId: string) => Promise<ProductReview[]>;
@@ -129,6 +132,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [mediaItems, setMediaItems] = useState<{ id: string; url: string; name: string; createdAt: string; }[]>([]);
   const [emailLogs, setEmailLogs] = useState<{ id: string; recipientEmail: string; subject: string; body: string; status: string; createdAt: string; }[]>([]);
+  const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
   
   // UI States
   const [activePage, setActivePageState] = useState<'home' | 'about' | 'shop' | 'contact' | 'faq' | 'account' | 'tracking' | 'admin' | 'product-details' | 'orders'>('home');
@@ -163,7 +167,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: string, session: any) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setResetPasswordOpen(true);
+      }
       if (session?.user) {
         const profile = await databaseService.getUserByEmail(session.user.email!);
         if (profile) {
@@ -384,6 +391,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return { success: true, message: 'Password reset link sent to your email.' };
     } catch (err: any) {
       return { success: false, message: err.message || 'Failed to send reset email.' };
+    }
+  };
+
+  const updatePassword = async (password: string): Promise<{ success: boolean; message: string }> => {
+    if (!isSupabaseConfigured) {
+      return { success: false, message: 'Supabase is not configured.' };
+    }
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      return { success: true, message: 'Password has been updated successfully.' };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Failed to update password.' };
     }
   };
 
@@ -822,6 +842,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       loginUser,
       registerUser,
       resetPassword,
+      updatePassword,
+      resetPasswordOpen,
+      setResetPasswordOpen,
       cancelOrder,
       logoutUser,
       getProductReviews,
