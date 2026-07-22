@@ -111,11 +111,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, sh
           width: '100%',
           overflow: 'hidden',
           cursor: 'pointer',
-          flexShrink: 0,
-          backgroundColor: '#f8f6f4',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
+          flexShrink: 0
         }}
       >
         <img
@@ -125,7 +121,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, sh
           style={{
             width: '100%',
             height: '100%',
-            objectFit: 'contain',
+            objectFit: 'cover',
             objectPosition: 'center'
           }}
         />
