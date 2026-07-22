@@ -70,17 +70,3 @@ export async function rateLimit(
   }
 }
 
-// Cleanup stale entries every 5 minutes in memory fallback
-if (typeof setInterval !== 'undefined') {
-  const interval = setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of hits) {
-      if (now > entry.resetAt) hits.delete(key);
-    }
-  }, 300000);
-  
-  // Prevent blocking process exit in Node environments
-  if (interval && typeof interval.unref === 'function') {
-    interval.unref();
-  }
-}

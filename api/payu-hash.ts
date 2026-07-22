@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import { rateLimit } from './_rateLimit';
+import { rateLimit } from './_rateLimit.js';
 
 export default async function handler(req: any, res: any) {
   try {

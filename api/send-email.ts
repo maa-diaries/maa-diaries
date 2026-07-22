@@ -1,4 +1,4 @@
-import { rateLimit } from './_rateLimit';
+import { rateLimit } from './_rateLimit.js';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';

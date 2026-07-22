@@ -1,4 +1,4 @@
-import { rateLimit } from './_rateLimit';
+import { rateLimit } from './_rateLimit.js';
 
 export default async function handler(req: any, res: any) {
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || 'unknown';
