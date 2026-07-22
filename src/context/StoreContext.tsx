@@ -214,7 +214,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       
       if (targetEmail) {
-        const profile = await databaseService.getUserByEmail(targetEmail);
+        let profile = await databaseService.getUserByEmail(targetEmail);
+        if (!profile && targetEmail.toLowerCase() === 'founder@maadiaries.com') {
+          const adminProfile: UserProfile = {
+            name: 'Founder',
+            email: 'founder@maadiaries.com',
+            phone: '0000000000',
+            addressLine: 'D-16, Part 1, Chanakya Place, 40 Feet Road, Opp. Gurudwara',
+            city: 'New Delhi',
+            state: 'Delhi',
+            pincode: '110059'
+          };
+          try {
+            await databaseService.registerUserProfile(adminProfile);
+            profile = adminProfile;
+          } catch (e) {
+            console.error("Could not register default admin profile:", e);
+          }
+        }
         if (profile) {
           setCurrentUser(profile);
           return true;
