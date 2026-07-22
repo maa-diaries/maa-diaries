@@ -550,7 +550,7 @@ body {
   }
 
   .category-scroll-mobile > .category-page > .category-card {
-    height: 140px !important;
+    height: 160px !important;
   }
 
   .category-scroll-mobile > .category-page > .category-card h3 {
@@ -705,7 +705,7 @@ body {
   .account-action-grid { grid-template-columns: 1fr !important; }
 
   .category-scroll-mobile > .category-page > .category-card {
-    height: 120px !important;
+    height: 140px !important;
   }
   .category-scroll-mobile > .category-page > .category-card h3 {
     font-size: 0.75rem !important;
