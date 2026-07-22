@@ -34,8 +34,8 @@ export const AboutUs: React.FC = () => {
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ color: 'var(--gold-primary)', marginTop: '4px' }}><Sparkles size={24} /></div>
               <div>
-                <h4 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '6px' }}>Premium Rolled Gold Plating</h4>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>5x thicker micro-plating than standard fashion jewelry, delivering rich gold tone and depth.</p>
+                <h4 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '6px' }}>Hypoallergenic & Skin-Safe</h4>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Nickel-free brass & stainless steel bases, safe for sensitive skin.</p>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '16px' }}>
