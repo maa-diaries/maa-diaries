@@ -681,6 +681,30 @@ export const ProductDetails: React.FC = () => {
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
                       {rev.comment}
                     </p>
+
+                    {rev.replyComment && (
+                      <div style={{
+                        marginTop: '12px',
+                        padding: '12px 16px',
+                        backgroundColor: 'rgba(212, 175, 55, 0.04)',
+                        borderLeft: '3px solid var(--gold-primary)',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        lineHeight: 1.4,
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                          <strong style={{ color: 'var(--gold-primary)' }}>Maa Diaries Response</strong>
+                          {rev.repliedAt && (
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                              {new Date(rev.repliedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+                          {rev.replyComment}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

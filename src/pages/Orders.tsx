@@ -1,13 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
-import { ShoppingBag, ArrowLeft, Truck, MapPin, CheckCircle, Package, ChevronDown, ChevronUp, XCircle } from 'lucide-react';
+import { ShoppingBag, ArrowLeft, Truck, MapPin, CheckCircle, Package, ChevronDown, ChevronUp, XCircle, Star } from 'lucide-react';
 
 export const Orders: React.FC = () => {
   const navigate = useNavigate();
-  const { orders, selectedOrderId, setSelectedOrderId, submitInquiry, currentUser, cancelOrder } = useStore();
+  const { orders, selectedOrderId, setSelectedOrderId, submitInquiry, currentUser, cancelOrder, submitProductReview } = useStore();
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'All' | 'Active' | 'Delivered' | 'Cancelled'>('All');
+
+  // Product Review Form states
+  const [selectedReviewProduct, setSelectedReviewProduct] = useState<any | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   // Filter orders to only show the current user's orders (admin sees all)
   const userOrders = currentUser
@@ -48,6 +56,45 @@ export const Orders: React.FC = () => {
       console.error("Order feedback submit error:", err);
     } finally {
       setFeedbackLoading(false);
+    }
+  };
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedReviewProduct || !currentUser) return;
+    if (!reviewComment.trim()) {
+      setReviewError("Please write a comment for your review.");
+      return;
+    }
+
+    const strippedComment = reviewComment.replace(/<[^>]*>/g, '');
+    if (strippedComment.length > 500) {
+      setReviewError("Review must be 500 characters or less.");
+      return;
+    }
+
+    setReviewLoading(true);
+    setReviewError(null);
+
+    try {
+      await submitProductReview({
+        productId: selectedReviewProduct.id,
+        userName: currentUser.name,
+        rating: reviewRating,
+        comment: strippedComment
+      });
+
+      setReviewSubmitted(true);
+      setTimeout(() => {
+        setSelectedReviewProduct(null);
+        setReviewSubmitted(false);
+        setReviewComment('');
+        setReviewRating(5);
+      }, 3000);
+    } catch (err: any) {
+      setReviewError(err.message || "Failed to submit review.");
+    } finally {
+      setReviewLoading(false);
     }
   };
 
@@ -474,18 +521,46 @@ export const Orders: React.FC = () => {
                                     display: 'flex',
                                     justifyContent: 'space-between',
                                     alignItems: 'center',
-                                    marginTop: '8px'
+                                    marginTop: '8px',
+                                    flexWrap: 'wrap',
+                                    gap: '8px'
                                   }}>
-                                    <span style={{
-                                      fontSize: '0.75rem',
-                                      color: 'var(--text-secondary)',
-                                      background: 'var(--bg-secondary)',
-                                      padding: '2px 8px',
-                                      borderRadius: '20px',
-                                      border: '1px solid var(--border-light)'
-                                    }}>
-                                      Qty: {item.quantity}
-                                    </span>
+                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                      <span style={{
+                                        fontSize: '0.75rem',
+                                        color: 'var(--text-secondary)',
+                                        background: 'var(--bg-secondary)',
+                                        padding: '2px 8px',
+                                        borderRadius: '20px',
+                                        border: '1px solid var(--border-light)'
+                                      }}>
+                                        Qty: {item.quantity}
+                                      </span>
+                                      {order.status === 'Delivered' && (
+                                        <button
+                                          onClick={() => {
+                                            setSelectedReviewProduct(item.product);
+                                            setReviewRating(5);
+                                            setReviewComment('');
+                                            setReviewSubmitted(false);
+                                            setReviewError(null);
+                                          }}
+                                          className="text-button animate-fade-in"
+                                          style={{
+                                            fontSize: '0.75rem',
+                                            color: 'var(--gold-primary)',
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            fontWeight: 600,
+                                            padding: '2px 6px',
+                                            textDecoration: 'underline'
+                                          }}
+                                        >
+                                          Write Review
+                                        </button>
+                                      )}
+                                    </div>
                                     <span style={{
                                       color: 'var(--gold-primary)',
                                       fontWeight: 600,
@@ -654,6 +729,132 @@ export const Orders: React.FC = () => {
                   style={{ width: '100%', padding: '12px' }}
                 >
                   {feedbackLoading ? 'Submitting Feedback...' : 'Send Feedback to Owner'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Product Review Overlay Modal */}
+      {selectedReviewProduct && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(7, 7, 8, 0.8)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+          animation: 'fadeIn 0.3s ease'
+        }}>
+          <div className="glass animate-slide-up" style={{
+            width: '90%',
+            maxWidth: '500px',
+            padding: '32px',
+            borderRadius: '12px',
+            backgroundColor: 'var(--bg-secondary)',
+            border: '1px solid var(--border-light)',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => setSelectedReviewProduct(null)}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                fontSize: '1.2rem'
+              }}
+            >
+              &times;
+            </button>
+
+            <h3 style={{ fontSize: '1.4rem', fontFamily: 'var(--font-serif)', marginBottom: '4px', color: 'var(--text-primary)' }}>
+              Review {selectedReviewProduct.name}
+            </h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+              Share your experience with this premium jewelry piece.
+            </p>
+
+            {reviewSubmitted ? (
+              <div style={{ textAlign: 'center', padding: '30px 0' }}>
+                <span style={{ fontSize: '2.5rem', color: 'var(--gold-primary)' }}>✓</span>
+                <h4 style={{ color: 'var(--text-primary)', margin: '12px 0 6px' }}>Review Submitted!</h4>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  Thank you for your review. Your feedback keeps us going!
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleReviewSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Interactive Star Picker */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '8px' }}>
+                    Overall Rating:
+                  </label>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        type="button"
+                        key={star}
+                        onClick={() => setReviewRating(star)}
+                        style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', outline: 'none' }}
+                      >
+                        <Star 
+                          size={24} 
+                          fill={star <= reviewRating ? 'var(--gold-primary)' : 'none'} 
+                          color={star <= reviewRating ? 'var(--gold-primary)' : 'var(--text-muted)'} 
+                          style={{ transition: 'transform 0.15s ease' }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Comment */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '8px' }}>
+                    Review Comment:
+                  </label>
+                  <textarea
+                    rows={4}
+                    placeholder="Share your thoughts on the metal finish, shine, and fit..."
+                    value={reviewComment}
+                    onChange={e => setReviewComment(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      background: 'var(--bg-primary)',
+                      border: '1px solid var(--border-light)',
+                      borderRadius: '4px',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.85rem',
+                      resize: 'none'
+                    }}
+                  />
+                </div>
+
+                {reviewError && (
+                  <span role="alert" style={{ fontSize: '0.78rem', color: '#e74c3c' }}>
+                    {reviewError}
+                  </span>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={reviewLoading}
+                  className="gold-button"
+                  style={{ width: '100%', padding: '12px' }}
+                >
+                  {reviewLoading ? 'Submitting Review...' : 'Post Review'}
                 </button>
               </form>
             )}
