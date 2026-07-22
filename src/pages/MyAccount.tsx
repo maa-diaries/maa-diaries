@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
-import { User, ShoppingBag, ArrowRight, MapPin, Heart, PackageCheck, ChevronRight, ShieldCheck, LogOut, XCircle, Gift, Trash2 } from 'lucide-react';
+import { User, ShoppingBag, ArrowRight, MapPin, Heart, PackageCheck, ChevronRight, ShieldCheck, LogOut, XCircle, Truck, Trash2 } from 'lucide-react';
 
 export const MyAccount: React.FC = () => {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ export const MyAccount: React.FC = () => {
     products,
   } = useStore();
 
-  const [activeSection, setActiveSection] = useState<'orders'|'wishlist'|'address'|'refer'>('orders');
+  const [activeSection, setActiveSection] = useState<'orders'|'wishlist'|'address'>('orders');
 
   const [isRegister, setIsRegister] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -475,7 +475,7 @@ export const MyAccount: React.FC = () => {
           <button onClick={() => setActiveSection('orders')} className="account-action" style={{ borderColor: activeSection==='orders' ? 'var(--gold-primary)' : undefined }}><PackageCheck size={19} /><span>Order History</span><ChevronRight size={16} /></button>
           <button onClick={() => setActiveSection('wishlist')} className="account-action" style={{ borderColor: activeSection==='wishlist' ? 'var(--gold-primary)' : undefined }}><Heart size={19} /><span>My Wishlist ({wishlist.length})</span><ChevronRight size={16} /></button>
           <button onClick={() => setActiveSection('address')} className="account-action" style={{ borderColor: activeSection==='address' ? 'var(--gold-primary)' : undefined }}><MapPin size={19} /><span>Saved Address</span><ChevronRight size={16} /></button>
-          <button onClick={() => setActiveSection('refer')} className="account-action" style={{ borderColor: activeSection==='refer' ? 'var(--gold-primary)' : undefined }}><Gift size={19} /><span>Refer & Earn</span><ChevronRight size={16} /></button>
+          <button onClick={() => navigate('/orders')} className="account-action"><Truck size={19} /><span>Track Order</span><ChevronRight size={16} /></button>
         </div>
       </div>
 
@@ -631,30 +631,6 @@ export const MyAccount: React.FC = () => {
             </div>
           </>)}
 
-          {/* ── REFER & EARN ── */}
-          {activeSection === 'refer' && (<>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-primary)', textTransform: 'uppercase' }}>
-              <Gift size={19} style={{ color: 'var(--gold-primary)' }} /> Refer & Earn
-            </h2>
-            <div style={{ textAlign: 'center', padding: '20px 0 10px' }}>
-              <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'var(--gold-light)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold-primary)', marginBottom: '18px' }}><Gift size={32} /></div>
-              <h3 style={{ fontWeight: 400, fontSize: '1.4rem', marginBottom: '10px' }}>Share the Love, Earn Rewards</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '400px', margin: '0 auto 28px', lineHeight: 1.6 }}>Refer a friend to Maa Diaries and earn ₹200 store credit when they place their first order!</p>
-              <div style={{ background: 'var(--bg-secondary)', border: '1px dashed var(--gold-primary)', borderRadius: '8px', padding: '20px', marginBottom: '24px', maxWidth: '340px', margin: '0 auto 24px' }}>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Your Referral Code</p>
-                <p style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--gold-primary)', letterSpacing: '0.15em', margin: 0 }}>MD{currentUser?.phone?.slice(-4) || 'XXXX'}</p>
-              </div>
-              <button onClick={() => { navigator.clipboard.writeText(`MD${currentUser?.phone?.slice(-4)}`); }} className="gold-button" style={{ padding: '10px 32px' }}>Copy Code</button>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px', marginTop: '32px' }}>
-                {[{label:'Friends Referred',val:'0'},{label:'Rewards Earned',val:'₹0'},{label:'Pending Rewards',val:'₹0'}].map(s=>(
-                  <div key={s.label} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '16px' }}>
-                    <p style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--gold-primary)', margin: '0 0 4px 0' }}>{s.val}</p>
-                    <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', margin: 0 }}>{s.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>)}
 
         </div>
       </div>

@@ -403,3 +403,34 @@ DROP TRIGGER IF EXISTS set_users_updated_at ON public.registered_users;
 CREATE TRIGGER set_users_updated_at
   BEFORE UPDATE ON public.registered_users
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+
+-- ============================================================
+-- 14. AUTO-CREATE USER PROFILE ON EMAIL VERIFICATION TRIGGER
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.handle_user_confirmation()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Check if the email is confirmed (email_confirmed_at is not null)
+  -- and that a profile doesn't already exist in public.registered_users
+  IF NEW.email_confirmed_at IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.registered_users WHERE email = NEW.email
+  ) THEN
+    INSERT INTO public.registered_users (name, email, phone, address_line, city, state, pincode)
+    VALUES (
+      COALESCE(NEW.raw_user_meta_data->>'name', NEW.email),
+      NEW.email,
+      COALESCE(NEW.raw_user_meta_data->>'phone', ''),
+      COALESCE(NEW.raw_user_meta_data->>'address_line', ''),
+      COALESCE(NEW.raw_user_meta_data->>'city', ''),
+      COALESCE(NEW.raw_user_meta_data->>'state', ''),
+      COALESCE(NEW.raw_user_meta_data->>'pincode', '')
+    );
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_confirmed ON auth.users;
+CREATE TRIGGER on_auth_user_confirmed
+  AFTER INSERT OR UPDATE ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_user_confirmation();

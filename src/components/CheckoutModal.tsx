@@ -312,15 +312,18 @@ export const CheckoutModal: React.FC = () => {
 
         if (!result.success) {
           setAuthError(result.message || 'Registration failed. This email or phone might already be in use.');
+          setProcessing(false);
           return;
         }
 
         if (result.needsVerification) {
           setAuthError(result.message || 'A verification email has been sent. Please confirm before completing checkout.');
+          setProcessing(false);
           return;
         }
       } catch (err: any) {
         setAuthError(err?.message || 'Registration failed.');
+        setProcessing(false);
         return;
       }
     }

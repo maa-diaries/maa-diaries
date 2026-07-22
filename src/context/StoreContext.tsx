@@ -215,21 +215,44 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       if (targetEmail) {
         let profile = await databaseService.getUserByEmail(targetEmail);
-        if (!profile && targetEmail.toLowerCase() === 'founder@maadiaries.com') {
-          const adminProfile: UserProfile = {
-            name: 'Founder',
-            email: 'founder@maadiaries.com',
-            phone: '0000000000',
-            addressLine: 'D-16, Part 1, Chanakya Place, 40 Feet Road, Opp. Gurudwara',
-            city: 'New Delhi',
-            state: 'Delhi',
-            pincode: '110059'
-          };
-          try {
-            await databaseService.registerUserProfile(adminProfile);
-            profile = adminProfile;
-          } catch (e) {
-            console.error("Could not register default admin profile:", e);
+        if (!profile) {
+          if (targetEmail.toLowerCase() === 'founder@maadiaries.com') {
+            const adminProfile: UserProfile = {
+              name: 'Founder',
+              email: 'founder@maadiaries.com',
+              phone: '0000000000',
+              addressLine: 'D-16, Part 1, Chanakya Place, 40 Feet Road, Opp. Gurudwara',
+              city: 'New Delhi',
+              state: 'Delhi',
+              pincode: '110059'
+            };
+            try {
+              await databaseService.registerUserProfile(adminProfile);
+              profile = adminProfile;
+            } catch (e) {
+              console.error("Could not register default admin profile:", e);
+            }
+          } else {
+            // Auto-heal missing profile from user metadata on successful auth
+            const { data: authData } = await supabase.auth.getUser();
+            if (authData?.user) {
+              const u = authData.user;
+              const healedProfile: UserProfile = {
+                name: u.user_metadata?.name || u.email || 'Customer',
+                email: u.email || targetEmail,
+                phone: u.user_metadata?.phone || '',
+                addressLine: u.user_metadata?.address_line || '',
+                city: u.user_metadata?.city || '',
+                state: u.user_metadata?.state || '',
+                pincode: u.user_metadata?.pincode || ''
+              };
+              try {
+                await databaseService.registerUserProfile(healedProfile);
+                profile = healedProfile;
+              } catch (e) {
+                console.error("Could not auto-heal user profile:", e);
+              }
+            }
           }
         }
         if (profile) {
@@ -250,12 +273,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const registerUser = async (profile: UserProfile, password?: string): Promise<{ success: boolean; needsVerification?: boolean; message?: string }> => {
     if (isSupabaseConfigured && profile.email) {
-      // 1. Create Supabase Auth user
+      // 1. Create Supabase Auth user with full metadata
       const { data, error: authError } = await supabase.auth.signUp({
         email: profile.email,
         password: password || crypto.randomUUID(), // random password if none provided
         options: {
-          data: { name: profile.name }
+          data: {
+            name: profile.name,
+            phone: profile.phone,
+            address_line: profile.addressLine,
+            city: profile.city,
+            state: profile.state,
+            pincode: profile.pincode
+          }
         }
       });
       if (authError) {
@@ -265,18 +295,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Check if email confirmation is required and session is null
       const needsVerification = data.session === null;
 
-      // 2. Save profile to registered_users table (without password)
-      const profileSaved = await databaseService.registerUserProfile(profile);
-      if (!profileSaved) {
-        return { success: false, message: "Failed to store customer profile." };
-      }
-
       if (needsVerification) {
         return { 
           success: true, 
           needsVerification: true, 
           message: "A verification email has been sent. Please confirm your email before logging in." 
         };
+      }
+
+      // 2. Save profile to registered_users table (only if verification is disabled/already logged in)
+      const profileSaved = await databaseService.registerUserProfile(profile);
+      if (!profileSaved) {
+        return { success: false, message: "Failed to store customer profile." };
       }
 
       setCurrentUser(profile);
