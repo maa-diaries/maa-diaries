@@ -25,5 +25,6 @@
     /* Strict */
     "strict": true
   },
-  "include": ["src"]
+  "include": ["src"],
+    "exclude": ["src/scripts"]
 }

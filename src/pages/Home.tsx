@@ -660,21 +660,19 @@ export const Home: React.FC = () => {
         </div>
 
         <div ref={reviewsRef} className="product-grid-scroll reviews-carousel" style={{ display: 'flex', gap: '20px', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '8px', scrollbarWidth: 'none', paddingInline: 'calc(50% - 250px)' }}>
-          {<div ref={reviewsRef} className="product-grid-scroll reviews-carousel" style={{ display: 'flex', gap: '20px', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '8px', scrollbarWidth: 'none', paddingInline: 'calc(50% - 250px)' }}>
-        {homeReviews.map((rev, idx) => (
-          <div key={rev.id} className="glass" style={{ flex: '0 0 500px', minWidth: '280px', maxWidth: '500px', scrollSnapAlign: 'center', padding: '30px', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', gap: '4px', color: '#f1c40f' }}>
-              {[...Array(rev.rating)].map((_, i) => <Star key={i} size={16} fill="#f1c40f" />)}
+          {homeReviews.map((rev) => (
+            <div key={rev.id} className="glass" style={{ flex: '0 0 500px', minWidth: '280px', maxWidth: '500px', scrollSnapAlign: 'center', padding: '30px', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', gap: '4px', color: '#f1c40f' }}>
+                {[...Array(rev.rating)].map((_, i) => <Star key={i} size={16} fill="#f1c40f" />)}
+              </div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.6, fontStyle: 'italic' }}>
+                {rev.comment}
+              </p>
+              <div>
+                <h4 style={{ color: 'var(--text-primary)', fontSize: '0.95rem', margin: 0 }}>{rev.userName}</h4>
+              </div>
             </div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.6, fontStyle: 'italic' }}>
-              {rev.comment}
-            </p>
-            <div>
-              <h4 style={{ color: 'var(--text-primary)', fontSize: '0.95rem', margin: 0 }}>{rev.userName}</h4>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
         </div>
       </div>
 
