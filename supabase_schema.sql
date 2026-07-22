@@ -329,11 +329,11 @@ CREATE POLICY "email_logs_delete_admin" ON public.email_logs FOR DELETE USING (p
 -- ALTER TABLE public.registered_users DROP COLUMN IF EXISTS password;
 
 -- ============================================================
--- 11. INVENTORY STOCK DECREMENT TRIGGER
--- Automatically decrements product stock when an order is placed.
+-- 11. INVENTORY STOCK MANAGEMENT TRIGGER
+-- Automatically handles product stock when an order changes status or method.
 -- Runs with SECURITY DEFINER to bypass products table UPDATE RLS.
 -- ============================================================
-CREATE OR REPLACE FUNCTION public.decrement_stock_on_order()
+CREATE OR REPLACE FUNCTION public.handle_order_stock_change()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -342,30 +342,66 @@ DECLARE
   item jsonb;
   prod_id text;
   qty integer;
+  should_decrement boolean := false;
+  should_increment boolean := false;
 BEGIN
-  -- Loop through each item in the order's items JSONB array
-  FOR item IN SELECT * FROM jsonb_array_elements(NEW.items)
-  LOOP
-    prod_id := (item->'product'->>'id');
-    qty := (item->>'quantity')::integer;
-    
-    -- Decrement stock if stock column is not null and stock > 0
-    IF prod_id IS NOT NULL AND qty IS NOT NULL THEN
-      UPDATE public.products
-      SET stock = LEAST(GREATEST(0, stock - qty), stock)
-      WHERE id = prod_id AND stock IS NOT NULL;
+  -- Determine if we need to DECREMENT stock
+  IF TG_OP = 'INSERT' THEN
+    -- For new orders: decrement immediately if Cash on Delivery (COD) or already Paid
+    IF NEW.payment_method = 'COD' OR NEW.payment_status = 'Paid' THEN
+      should_decrement := true;
     END IF;
-  END LOOP;
+  ELSIF TG_OP = 'UPDATE' THEN
+    -- For updates: decrement if payment status changes from 'Pending' to 'Paid'
+    IF OLD.payment_status = 'Pending' AND NEW.payment_status = 'Paid' THEN
+      should_decrement := true;
+    END IF;
+    
+    -- For updates: increment (restore) stock if status changes to 'Cancelled' or 'Failed'
+    -- and we had previously decremented it (which is true if it was COD or previously Paid)
+    IF (OLD.status != 'Cancelled' AND NEW.status = 'Cancelled') OR (OLD.status != 'Failed' AND NEW.status = 'Failed') THEN
+      IF OLD.payment_method = 'COD' OR OLD.payment_status = 'Paid' THEN
+        should_increment := true;
+      END IF;
+    END IF;
+  END IF;
+
+  -- Perform stock updates
+  IF should_decrement THEN
+    FOR item IN SELECT * FROM jsonb_array_elements(NEW.items)
+    LOOP
+      prod_id := (item->'product'->>'id');
+      qty := (item->>'quantity')::integer;
+      IF prod_id IS NOT NULL AND qty IS NOT NULL THEN
+        UPDATE public.products
+        SET stock = LEAST(GREATEST(0, stock - qty), stock)
+        WHERE id = prod_id AND stock IS NOT NULL;
+      END IF;
+    END LOOP;
+  ELSIF should_increment THEN
+    FOR item IN SELECT * FROM jsonb_array_elements(NEW.items)
+    LOOP
+      prod_id := (item->'product'->>'id');
+      qty := (item->>'quantity')::integer;
+      IF prod_id IS NOT NULL AND qty IS NOT NULL THEN
+        UPDATE public.products
+        SET stock = stock + qty
+        WHERE id = prod_id AND stock IS NOT NULL;
+      END IF;
+    END LOOP;
+  END IF;
+
   RETURN NEW;
 END;
 $$;
 
 DROP TRIGGER IF EXISTS trg_decrement_stock_on_order ON public.orders;
+DROP TRIGGER IF EXISTS trg_order_stock_change ON public.orders;
 
-CREATE TRIGGER trg_decrement_stock_on_order
-AFTER INSERT ON public.orders
+CREATE TRIGGER trg_order_stock_change
+AFTER INSERT OR UPDATE ON public.orders
 FOR EACH ROW
-EXECUTE FUNCTION public.decrement_stock_on_order();
+EXECUTE FUNCTION public.handle_order_stock_change();
 
 
 -- ============================================================
