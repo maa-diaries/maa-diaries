@@ -451,6 +451,61 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ success: true, message: 'Delivery update email dispatched successfully' });
     }
 
+    if (type === 'welcome') {
+      const { name, email } = payload;
+      if (!email || !name) {
+        return res.status(400).json({ error: 'Missing name or email for welcome message.' });
+      }
+
+      const subject = `Welcome to Maa Diaries! ✨`;
+      const html = `
+        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; background-color: #fff;">
+          <div style="background-color: #b08d57; padding: 30px 20px; text-align: center; color: #fff;">
+            <h1 style="margin: 0; font-family: Georgia, serif; font-size: 28px; font-weight: 300; letter-spacing: 2px;">MAA DIARIES</h1>
+            <p style="margin: 5px 0 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Aapki pasand hamari pehchaan</p>
+          </div>
+          <div style="padding: 30px 20px; line-height: 1.6; color: #444;">
+            <h2 style="color: #333; font-family: Georgia, serif; font-weight: 300; font-size: 20px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;">Welcome to the Family!</h2>
+            <p>Dear <strong>${escapeHtml(name)}</strong>,</p>
+            <p>We are absolutely thrilled to welcome you to Maa Diaries! Thank you for creating an account with us.</p>
+            <p>At Maa Diaries, we curate premium anti-tarnish, water-resistant jewelry designed for daily wear and special occasions. As a registered member, you can track your orders, manage your wishlist, and check out faster.</p>
+            
+            <div style="background-color: #faf7f2; border: 1px solid #f3ebd8; border-radius: 6px; padding: 20px; margin: 25px 0; text-align: center;">
+              <p style="margin: 0 0 15px 0; color: #333; font-weight: 500;">Start exploring our latest collections today!</p>
+              <a href="${process.env.BASE_URL || 'https://maadiaries.com'}/shop" style="display: inline-block; background-color: #b08d57; color: #fff; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600;">Shop the Collection</a>
+            </div>
+
+            <p>If you have any questions, feel free to reach out to us by replying to this email or sending us a message on WhatsApp at +91 84482 29528.</p>
+            
+            <p style="margin-top: 35px; font-size: 13px; color: #888; text-align: center; border-top: 1px dashed #eaeaea; padding-top: 20px;">
+              D-16, Part 1, Chanakya Place, 40 Feet Road, Opp. Gurudwara, New Delhi - 110059
+            </p>
+          </div>
+        </div>
+      `;
+
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: `Maa Diaries <${supportEmail}>`,
+          to: email,
+          subject,
+          html,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Resend API call failed: ${errorText}`);
+      }
+
+      return res.status(200).json({ success: true, message: 'Welcome email dispatched successfully' });
+    }
+
     return res.status(400).json({ error: `Unsupported email type: ${type}` });
   } catch (error: any) {
     console.error('Error in send-email handler:', error);

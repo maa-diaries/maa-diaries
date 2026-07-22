@@ -92,7 +92,7 @@ interface StoreContextType {
   logoutUser: () => void;
   getProductReviews: (productId: string) => Promise<ProductReview[]>;
   submitProductReview: (review: Omit<ProductReview, 'id' | 'createdAt'>) => Promise<ProductReview>;
-  sendEmailViaResend: (type: 'order' | 'feedback' | 'review' | 'delivery_update', payload: any) => Promise<void>;
+  sendEmailViaResend: (type: 'order' | 'feedback' | 'review' | 'delivery_update' | 'welcome', payload: any) => Promise<void>;
   categories: string[];
   addCategory: (name: string) => Promise<void>;
   deleteCategory: (name: string) => Promise<void>;
@@ -264,6 +264,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       setCurrentUser(profile);
       localStorage.setItem('md_current_user_v1', JSON.stringify(profile));
+      // Dispatch welcome email via Resend
+      sendEmailViaResend('welcome', { name: profile.name, email: profile.email });
       return { success: true };
     }
 
@@ -272,6 +274,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (profileSaved) {
       setCurrentUser(profile);
       localStorage.setItem('md_current_user_v1', JSON.stringify(profile));
+      // Dispatch welcome email via Resend
+      sendEmailViaResend('welcome', { name: profile.name, email: profile.email });
       return { success: true };
     }
     return { success: false, message: "Registration failed." };
@@ -545,7 +549,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Email service helper via Resend Vercel Serverless Function
-  const sendEmailViaResend = async (type: 'order' | 'feedback' | 'review' | 'delivery_update', payload: any) => {
+  const sendEmailViaResend = async (type: 'order' | 'feedback' | 'review' | 'delivery_update' | 'welcome', payload: any) => {
     try {
       const response = await fetch('/api/send-email', {
         method: 'POST',
