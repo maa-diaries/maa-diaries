@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Send, Check } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import logoPng from '../assets/logo.png';
 
 export const Footer: React.FC = () => {
-  const { setActivePage } = useStore();
+  const { siteSettings } = useStore();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
   const [activePolicy, setActivePolicy] = useState<string | null>(null);
@@ -18,10 +19,10 @@ export const Footer: React.FC = () => {
     }
   };
 
-  const policies: Record<string, { title: string; content: string }> = {
+  const policies: Record<string, { title: string; content: string }> = useMemo(() => ({
     shipping: {
       title: "Shipping Policy",
-      content: "We deliver to PIN codes all over India. All orders are processed within 1-2 business days. Express delivery via Shiprocket takes 2-4 business days for metro cities, and 4-6 business days for the rest of India. Prepaid orders above ₹999 qualify for Free Shipping. A shipping charge of ₹80 applies to orders below ₹999, and ₹50 extra for COD orders."
+      content: `We deliver to PIN codes all over India. All orders are processed within 1-2 business days. Express delivery via Shiprocket takes 2-4 business days for metro cities, and 4-6 business days for the rest of India. Prepaid orders above ₹${siteSettings.freeShippingThreshold} qualify for Free Shipping. A shipping charge of ₹80 applies to orders below ₹${siteSettings.freeShippingThreshold}, and ₹50 extra for COD orders.`
     },
     return: {
       title: "Return & Exchange Policy",
@@ -29,7 +30,7 @@ export const Footer: React.FC = () => {
     },
     refund: {
       title: "Cancellation & Refund Policy",
-      content: "You may cancel your order within 6 hours of placement by writing to support@maadiaries.com. Once dispatched via Shiprocket, orders cannot be cancelled. For returned products, refunds are processed within 3-5 business days back to your original payment method (via PayU gateway simulation) or as store credits for future purchases."
+      content: `You may cancel your order within 6 hours of placement by writing to ${siteSettings.supportEmail}. Once dispatched via Shiprocket, orders cannot be cancelled. For returned products, refunds are processed within 3-5 business days back to your original payment method (via PayU gateway simulation) or as store credits for future purchases.`
     },
     privacy: {
       title: "Privacy Policy",
@@ -39,7 +40,20 @@ export const Footer: React.FC = () => {
       title: "Terms & Conditions",
       content: "By purchasing from Maa Diaries, you agree to these terms. All prices listed are in INR (Indian Rupees) inclusive of local taxes. We reserve the right to modify pricing or update product specs. Our anti-tarnish jewelry is sweatproof and water-resistant, but longevity depends on compliance with care guidelines."
     }
-  };
+  }), [siteSettings]);
+
+  const policyModalCloseRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!activePolicy) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActivePolicy(null);
+    };
+    document.addEventListener('keydown', handleEscape);
+    // Focus the close button when modal opens
+    setTimeout(() => policyModalCloseRef.current?.focus(), 100);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [activePolicy]);
 
   return (
     <footer style={{
@@ -93,6 +107,7 @@ export const Footer: React.FC = () => {
               href="https://www.facebook.com/share/1ESCYJgAQA/" 
               target="_blank" 
               rel="noopener noreferrer" 
+              aria-label="Facebook" 
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -124,6 +139,7 @@ export const Footer: React.FC = () => {
               href="https://www.instagram.com/maadiaries_?igsh=MTkxNGlydGhscXR6aA==" 
               target="_blank" 
               rel="noopener noreferrer" 
+              aria-label="Instagram" 
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -154,9 +170,10 @@ export const Footer: React.FC = () => {
               </svg>
             </a>
             <a 
-              href="https://wa.me/918448229528?text=Hello!%20I%20am%20browsing%20the%20Maa%20Diaries%20website%20and%20would%20like%20some%20assistance." 
+              href={`https://wa.me/${siteSettings.whatsapp}?text=Hello!%20I%20am%20browsing%20the%20Maa%20Diaries%20website%20and%20would%20like%20some%20assistance.`} 
               target="_blank" 
               rel="noopener noreferrer" 
+              aria-label="WhatsApp" 
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -186,7 +203,8 @@ export const Footer: React.FC = () => {
               </svg>
             </a>
             <a 
-              href="tel:+918448229528" 
+              href={`tel:${siteSettings.supportPhone}`} 
+              aria-label="Phone" 
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -227,10 +245,10 @@ export const Footer: React.FC = () => {
             fontWeight: 600
           }}>Explore</h4>
           <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-            <li><button onClick={() => setActivePage('shop')} style={{ cursor: 'pointer', background: 'none', border: 'none', color: 'inherit', textAlign: 'left' }}>Shop Collections</button></li>
-            <li><button onClick={() => setActivePage('about')} style={{ cursor: 'pointer', background: 'none', border: 'none', color: 'inherit', textAlign: 'left' }}>Our Story (About Us)</button></li>
-            <li><button onClick={() => setActivePage('orders')} style={{ cursor: 'pointer', background: 'none', border: 'none', color: 'inherit', textAlign: 'left' }}>Track Your Orders</button></li>
-            <li><button onClick={() => setActivePage('contact')} style={{ cursor: 'pointer', background: 'none', border: 'none', color: 'inherit', textAlign: 'left' }}>Contact Us</button></li>
+            <li><Link to="/shop" style={{ color: 'inherit', textDecoration: 'none' }}>Shop Collections</Link></li>
+            <li><Link to="/about" style={{ color: 'inherit', textDecoration: 'none' }}>Our Story (About Us)</Link></li>
+            <li><Link to="/orders" style={{ color: 'inherit', textDecoration: 'none' }}>Track Your Orders</Link></li>
+            <li><Link to="/contact" style={{ color: 'inherit', textDecoration: 'none' }}>Contact Us</Link></li>
           </ul>
         </div>
 
@@ -272,6 +290,7 @@ export const Footer: React.FC = () => {
           }}>
             <input
               type="email"
+              aria-label="Email address for newsletter subscription"
               placeholder="Your email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -320,13 +339,13 @@ export const Footer: React.FC = () => {
       }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <MapPin size={12} style={{ color: 'var(--gold-primary)' }} /> New Delhi, India
+            <MapPin size={12} style={{ color: 'var(--gold-primary)' }} /> {siteSettings.supportAddress}
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Phone size={12} style={{ color: 'var(--gold-primary)' }} /> +91 84482 29528
+            <Phone size={12} style={{ color: 'var(--gold-primary)' }} /> {siteSettings.supportPhone}
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Mail size={12} style={{ color: 'var(--gold-primary)' }} /> support@maadiaries.com
+            <Mail size={12} style={{ color: 'var(--gold-primary)' }} /> {siteSettings.supportEmail}
           </span>
         </div>
         <div>
@@ -336,20 +355,26 @@ export const Footer: React.FC = () => {
 
       {/* Policy Modal Overlay */}
       {activePolicy && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000,
-          padding: '20px'
-        }}>
-          <div className="glass" style={{
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={policies[activePolicy].title}
+          onClick={() => setActivePolicy(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            padding: '20px'
+          }}
+        >
+          <div className="glass" onClick={(e) => e.stopPropagation()} style={{
             maxWidth: '600px',
             width: '100%',
             padding: '30px',
@@ -364,6 +389,7 @@ export const Footer: React.FC = () => {
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button 
+                ref={policyModalCloseRef}
                 onClick={() => setActivePolicy(null)}
                 className="gold-button"
                 style={{ padding: '8px 20px', fontSize: '0.85rem' }}

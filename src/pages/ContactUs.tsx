@@ -3,7 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { Mail, Phone, Clock, MessageSquare, CheckCircle } from 'lucide-react';
 
 export const ContactUs: React.FC = () => {
-  const { submitInquiry } = useStore();
+  const { submitInquiry, siteSettings } = useStore();
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -25,7 +25,7 @@ export const ContactUs: React.FC = () => {
   const handleWhatsAppRedirect = () => {
     // Open a mock WhatsApp chat with pre-filled text
     const text = encodeURIComponent("Hello Maa Diaries team! I have an inquiry about my order.");
-    window.open(`https://wa.me/918448229528?text=${text}`, '_blank');
+    window.open(`https://wa.me/${siteSettings.whatsapp}?text=${text}`, '_blank');
   };
 
   return (
@@ -51,7 +51,7 @@ export const ContactUs: React.FC = () => {
               </div>
               <div>
                 <h4 style={{ fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '4px' }}>Email Support</h4>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>support@maadiaries.com</p>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{siteSettings.supportEmail}</p>
               </div>
             </div>
 
@@ -61,7 +61,7 @@ export const ContactUs: React.FC = () => {
               </div>
               <div>
                 <h4 style={{ fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '4px' }}>WhatsApp & Call Support</h4>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>+91 84482 29528</p>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{siteSettings.supportPhone}</p>
               </div>
             </div>
 

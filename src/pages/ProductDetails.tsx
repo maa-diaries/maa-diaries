@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { ArrowLeft, ShoppingBag, Heart, ShieldCheck, MapPin, Truck, Star } from 'lucide-react';
+import { Breadcrumb } from '../components/Breadcrumb';
 
 export const ProductDetails: React.FC = () => {
+  const navigate = useNavigate();
+  const { id: routeProductId } = useParams();
   const { 
-    selectedProductId, 
     products, 
     addToCart, 
     setCartOpen, 
     toggleWishlist, 
     wishlist, 
-    setActivePage,
     setTriggerGemRain,
     getProductReviews,
     submitProductReview,
@@ -18,7 +20,7 @@ export const ProductDetails: React.FC = () => {
     orders
   } = useStore();
 
-  const product = products.find(p => p.id === selectedProductId);
+  const product = products.find(p => p.id === routeProductId);
 
   // Configuration selections
   const selectedMetal = product?.metalOptions[0] || '18k Yellow Gold';
@@ -55,7 +57,7 @@ export const ProductDetails: React.FC = () => {
       // Must be paid
       const isPaid = order.paymentStatus === 'Paid';
       // Must contain the product ID
-      const hasProduct = order.items && order.items.some((item: any) => item.id === product?.id);
+      const hasProduct = order.items && order.items.some((item: any) => item.product?.id === product?.id);
 
       return isDelivered && isPaid && hasProduct;
     });
@@ -63,7 +65,6 @@ export const ProductDetails: React.FC = () => {
 
   const filteredAndSortedReviews = (rawReviews: any[]) => {
     return rawReviews
-      .filter((r: any) => r.rating === 5 || r.rating === 4)
       .sort((a: any, b: any) => {
         if (b.rating !== a.rating) {
           return b.rating - a.rating;
@@ -73,8 +74,8 @@ export const ProductDetails: React.FC = () => {
   };
 
   useEffect(() => {
-    if (selectedProductId) {
-      getProductReviews(selectedProductId).then((rawReviews) => {
+    if (routeProductId) {
+      getProductReviews(routeProductId).then((rawReviews) => {
         setReviews(filteredAndSortedReviews(rawReviews));
       });
     }
@@ -83,13 +84,19 @@ export const ProductDetails: React.FC = () => {
     setReviewComment('');
     setReviewSubmitted(false);
     setReviewError(null);
-  }, [selectedProductId]);
+  }, [routeProductId]);
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!product || !currentUser) return;
     if (!reviewComment.trim()) {
       setReviewError("Please write a comment for your review.");
+      return;
+    }
+
+    const strippedComment = reviewComment.replace(/<[^>]*>/g, '');
+    if (strippedComment.length > 500) {
+      setReviewError("Review must be 500 characters or less.");
       return;
     }
 
@@ -101,7 +108,7 @@ export const ProductDetails: React.FC = () => {
         productId: product.id,
         userName: currentUser.name,
         rating: reviewRating,
-        comment: reviewComment
+        comment: strippedComment
       });
 
       setReviews(prev => {
@@ -122,7 +129,7 @@ export const ProductDetails: React.FC = () => {
     return (
       <div style={{ padding: '80px 24px', textAlign: 'center' }}>
         <h3>Product Not Found</h3>
-        <button onClick={() => setActivePage('shop')} className="gold-button-outline" style={{ marginTop: '16px' }}>
+        <button onClick={() => navigate('/shop')} className="gold-button-outline" style={{ marginTop: '16px' }}>
           Back to Shop
         </button>
       </div>
@@ -138,6 +145,10 @@ export const ProductDetails: React.FC = () => {
   const calculatedPrice = getCustomPrice();
 
   const handleAddToCart = () => {
+    if (product.stock === 0) {
+      alert("Sorry, this item is out of stock.");
+      return;
+    }
     window.dispatchEvent(new CustomEvent('product-added', { detail: { image: product.image } }));
     addToCart({
       product: {
@@ -190,9 +201,34 @@ export const ProductDetails: React.FC = () => {
       padding: '0 24px',
       minHeight: '80vh'
     }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": product.name,
+        "image": product.image,
+        "description": product.description,
+        "brand": { "@type": "Brand", "name": "Maa Diaries" },
+        "offers": {
+          "@type": "Offer",
+          "price": product.price,
+          "priceCurrency": "INR",
+          "availability": (product.stock ?? 0) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+        },
+        "aggregateRating": product.reviewsCount > 0 ? {
+          "@type": "AggregateRating",
+          "ratingValue": product.rating,
+          "reviewCount": product.reviewsCount
+        } : undefined
+      }) }} />
+      <Breadcrumb items={[
+        { label: 'Shop', href: '/shop' },
+        { label: product.category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), href: `/shop/${product.category.replace(/_/g, '-')}` },
+        { label: product.name }
+      ]} />
+
       {/* Back to catalog breadcrumb */}
       <button 
-        onClick={() => setActivePage('shop')}
+        onClick={() => navigate('/shop')}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -307,7 +343,7 @@ export const ProductDetails: React.FC = () => {
             <div>
               <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Selected Configuration Price</span>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
-                <strong style={{ fontSize: '1.8rem', color: 'var(--gold-primary)' }}>
+                <strong style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.8rem', fontWeight: 400, color: 'var(--gold-primary)' }}>
                   ₹{calculatedPrice.toLocaleString('en-IN')}
                 </strong>
                 {product.originalPrice && product.originalPrice > calculatedPrice && (
@@ -325,9 +361,10 @@ export const ProductDetails: React.FC = () => {
             <button 
               onClick={handleAddToCart}
               className="gold-button"
-              style={{ display: 'flex', gap: '8px' }}
+              disabled={product.stock === 0}
+              style={{ display: 'flex', gap: '8px', opacity: product.stock === 0 ? 0.5 : 1, cursor: product.stock === 0 ? 'not-allowed' : 'pointer' }}
             >
-              <ShoppingBag size={16} /> Add to Cart
+              <ShoppingBag size={16} /> {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
             </button>
           </div>
 
@@ -367,7 +404,7 @@ export const ProductDetails: React.FC = () => {
               </button>
             </form>
 
-            {pincodeError && <span style={{ fontSize: '0.75rem', color: '#e74c3c' }}>{pincodeError}</span>}
+            {pincodeError && <span role="alert" style={{ fontSize: '0.75rem', color: '#e74c3c' }}>{pincodeError}</span>}
 
             {shippingEstimate && (
               <div style={{
@@ -483,7 +520,7 @@ export const ProductDetails: React.FC = () => {
                     Only registered customers who purchased from us can leave a product review.
                   </p>
                   <button 
-                    onClick={() => setActivePage('account')}
+                    onClick={() => navigate('/account')}
                     className="gold-button-outline"
                     style={{ width: '100%', padding: '10px 14px', fontSize: '0.85rem' }}
                   >
@@ -573,7 +610,7 @@ export const ProductDetails: React.FC = () => {
                   </div>
 
                   {reviewError && (
-                    <span style={{ fontSize: '0.78rem', color: '#e74c3c' }}>
+                    <span role="alert" style={{ fontSize: '0.78rem', color: '#e74c3c' }}>
                       {reviewError}
                     </span>
                   )}

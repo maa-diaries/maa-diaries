@@ -1,16 +1,62 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { Heart, Eye, ShoppingBag, Star, X } from 'lucide-react';
+import { Breadcrumb } from '../components/Breadcrumb';
 import type { Product } from '../data/products';
 
+const SkeletonCard = () => (
+  <div style={{ borderRadius: '12px', overflow: 'hidden', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)' }}>
+    <div className="luxury-loader" style={{ height: '200px', background: 'var(--bg-secondary)' }} />
+    <div style={{ padding: '16px' }}>
+      <div style={{ height: '12px', background: 'var(--bg-secondary)', borderRadius: '4px', marginBottom: '8px', width: '40%' }} />
+      <div style={{ height: '16px', background: 'var(--bg-secondary)', borderRadius: '4px', marginBottom: '8px', width: '80%' }} />
+      <div style={{ height: '14px', background: 'var(--bg-secondary)', borderRadius: '4px', width: '30%' }} />
+    </div>
+  </div>
+);
 
 export const Shop: React.FC = () => {
-  const { products, toggleWishlist, wishlist, setSelectedProductId, setActivePage, shopCategory, setShopCategory, searchQuery, setSearchQuery, categories: dbCategories, addToCart } = useStore();
+  const navigate = useNavigate();
+  const { category: urlCategoryParam } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { products, toggleWishlist, wishlist, shopCategory, setShopCategory, searchQuery, setSearchQuery, categories: dbCategories, addToCart } = useStore();
 
-  // Search & Filter state
-  const [priceRange, setPriceRange] = useState<number>(5000);
-  const [sortBy, setSortBy] = useState<string>('relevance');
+  const [priceRange, setPriceRange] = useState<number>(() => {
+    const p = searchParams.get('price');
+    return p ? Math.min(Math.max(parseInt(p, 10), 500), 5000) : 5000;
+  });
+  const [sortBy, setSortBy] = useState<string>(() => searchParams.get('sort') || 'relevance');
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Map URL category slug (hyphenated) to database category (underscore-based)
+  const currentDbCategory = useMemo(() => {
+    if (!urlCategoryParam) return 'all';
+    const match = dbCategories.find(cat => cat.replace(/_/g, '-') === urlCategoryParam);
+    return match || 'all';
+  }, [urlCategoryParam, dbCategories]);
+
+  // Synchronize state with URL param
+  useEffect(() => {
+    if (currentDbCategory !== shopCategory) {
+      setShopCategory(currentDbCategory);
+    }
+  }, [currentDbCategory, shopCategory, setShopCategory]);
+
+  useEffect(() => {
+    const urlSearch = searchParams.get('q');
+    if (urlSearch && urlSearch !== searchQuery) setSearchQuery(urlSearch);
+    setIsLoading(false);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const params: Record<string, string> = {};
+    if (searchQuery) params.q = searchQuery;
+    if (priceRange < 5000) params.price = String(priceRange);
+    if (sortBy !== 'relevance') params.sort = sortBy;
+    setSearchParams(params, { replace: true });
+  }, [searchQuery, priceRange, sortBy, setSearchParams]);
 
   // Filtered and sorted products
   const filteredProducts = useMemo(() => {
@@ -33,10 +79,14 @@ export const Shop: React.FC = () => {
       });
   }, [products, searchQuery, shopCategory, priceRange, sortBy]);
 
-  // 3D Card Tilt effects
+  // 3D Card Tilt effects with cached bounding client rect to prevent layout thrashing
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const card = e.currentTarget;
-    const box = card.getBoundingClientRect();
+    let box = (card as any)._cachedRect;
+    if (!box) {
+      box = card.getBoundingClientRect();
+      (card as any)._cachedRect = box;
+    }
     const x = e.clientX - box.left - box.width / 2;
     const y = e.clientY - box.top - box.height / 2;
     card.style.transform = `perspective(1000px) rotateX(${-y / 15}deg) rotateY(${x / 15}deg) scale(1.02)`;
@@ -49,6 +99,7 @@ export const Shop: React.FC = () => {
 
   const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
     const card = e.currentTarget;
+    (card as any)._cachedRect = null;
     card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
     const shine = card.querySelector('.shine-overlay') as HTMLDivElement;
     if (shine) {
@@ -57,11 +108,14 @@ export const Shop: React.FC = () => {
   };
 
   const handleProductClick = (id: string) => {
-    setSelectedProductId(id);
-    setActivePage('product-details');
+    navigate('/product/' + id);
   };
 
   const addQuickViewToCart = (product: Product) => {
+    if (product.stock === 0) {
+      alert("Sorry, this item is out of stock.");
+      return;
+    }
     window.dispatchEvent(new CustomEvent('product-added', { detail: { image: product.image } }));
     addToCart({
       product: { id: product.id, name: product.name, price: product.price, image: product.image, category: product.category },
@@ -72,9 +126,10 @@ export const Shop: React.FC = () => {
   };
 
   const categories = [
-    { id: 'all', label: 'All Pieces' },
+    { id: 'all', slug: 'all', label: 'All Pieces' },
     ...dbCategories.map(cat => ({
       id: cat,
+      slug: cat.replace(/_/g, '-'),
       label: cat.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
     }))
   ];
@@ -86,6 +141,8 @@ export const Shop: React.FC = () => {
       padding: '0 24px',
       minHeight: '80vh'
     }}>
+      <Breadcrumb items={[{ label: 'Shop' }, ...(shopCategory !== 'all' ? [{ label: shopCategory.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), href: `/shop/${shopCategory.replace(/_/g, '-')}` }] : [])]} />
+
       {/* Title */}
       <div className="collections-heading" style={{ textAlign: 'center', marginBottom: '32px' }}>
         <span style={{ color: 'var(--gold-primary)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Curated for everyday elegance</span>
@@ -102,7 +159,14 @@ export const Shop: React.FC = () => {
         {categories.map((cat) => (
           <button
             key={cat.id}
-            onClick={() => setShopCategory(cat.id)}
+            onClick={() => {
+              const suffix = searchQuery || priceRange < 5000 || sortBy !== 'relevance' ? `?${searchParams.toString()}` : '';
+              if (cat.id === 'all') {
+                navigate(`/shop${suffix}`);
+              } else {
+                navigate(`/shop/${cat.slug}${suffix}`);
+              }
+            }}
             style={{
               padding: '8px 20px',
               borderRadius: '2px',
@@ -192,7 +256,15 @@ export const Shop: React.FC = () => {
       </div>
 
       {/* Product grid or empty state */}
-      {filteredProducts.length === 0 ? (
+      {isLoading ? (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+          gap: '24px'
+        }}>
+          {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : filteredProducts.length === 0 ? (
         <div style={{
           textAlign: 'center',
           padding: '80px 24px',
@@ -265,6 +337,7 @@ export const Shop: React.FC = () => {
                   <img 
                     src={p.image} 
                     alt={p.name} 
+                    loading="lazy"
                     style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s ease' }} 
                     className="product-img"
                   />
@@ -282,8 +355,8 @@ export const Shop: React.FC = () => {
                       backgroundColor: 'rgba(255, 255, 255, 0.9)',
                       backdropFilter: 'blur(4px)',
                       border: '1px solid var(--border-light)',
-                      width: '32px',
-                      height: '32px',
+                      width: '44px',
+                      height: '44px',
                       borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
@@ -318,7 +391,7 @@ export const Shop: React.FC = () => {
                   }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <strong style={{ color: 'var(--gold-primary)', fontSize: '1.1rem' }}>
+                        <strong style={{ color: 'var(--gold-primary)', fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.1rem', fontWeight: 400 }}>
                           ₹{p.price.toLocaleString('en-IN')}
                         </strong>
                         {p.originalPrice && p.originalPrice > p.price && (
@@ -357,9 +430,16 @@ export const Shop: React.FC = () => {
               <h2>{quickViewProduct.name}</h2>
               <div className="quick-view-rating"><Star size={15} fill="currentColor" /> {quickViewProduct.rating} <small>({quickViewProduct.reviewsCount} reviews)</small></div>
               <p>{quickViewProduct.description}</p>
-              <strong>₹{quickViewProduct.price.toLocaleString('en-IN')}</strong>
+              <strong style={{ fontFamily: "'Bebas Neue', sans-serif", fontWeight: 400, fontSize: '1.3rem' }}>₹{quickViewProduct.price.toLocaleString('en-IN')}</strong>
               <div className="quick-view-actions">
-                <button className="gold-button magnetic-button" onClick={() => addQuickViewToCart(quickViewProduct)}><ShoppingBag size={16} /> Add to Cart</button>
+                <button 
+                  className="gold-button magnetic-button" 
+                  onClick={() => addQuickViewToCart(quickViewProduct)}
+                  disabled={quickViewProduct.stock === 0}
+                  style={{ opacity: quickViewProduct.stock === 0 ? 0.5 : 1, cursor: quickViewProduct.stock === 0 ? 'not-allowed' : 'pointer' }}
+                >
+                  <ShoppingBag size={16} /> {quickViewProduct.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+                </button>
                 <button className="gold-button-outline" onClick={() => handleProductClick(quickViewProduct.id)}>View Details</button>
               </div>
             </div>

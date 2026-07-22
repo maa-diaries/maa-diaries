@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
-import { ShoppingBag, Heart, Lock, Menu, X, User, Info, Compass, Search, Mail } from 'lucide-react';
+import { ShoppingBag, Heart, Menu, X, User, Info, Compass, Search, Mail } from 'lucide-react';
 import logoPng from '../assets/logo.png';
 
 export const Navbar: React.FC = () => {
-  const { 
-    activePage, 
-    setActivePage, 
-    cart, 
-    setCartOpen, 
-    wishlist,
-    searchQuery,
-    setSearchQuery,
-    setShopCategory
-  } = useStore();
+  const { cart, setCartOpen, wishlist, searchQuery, setSearchQuery, setShopCategory } = useStore();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [navSearch, setNavSearch] = useState(searchQuery);
@@ -26,23 +20,23 @@ export const Navbar: React.FC = () => {
     e.preventDefault();
     setSearchQuery(navSearch);
     setShopCategory('all');
-    setActivePage('shop');
+    navigate('/shop');
     setMobileMenuOpen(false);
   };
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const navItems = [
-    { id: 'home', label: 'Home', icon: null },
-    { id: 'about', label: 'About Us', icon: Info },
-    { id: 'shop', label: 'Collections', icon: Compass },
-    { id: 'orders', label: 'Orders', icon: ShoppingBag },
-    { id: 'contact', label: 'Contact Us', icon: Mail },
-    { id: 'account', label: 'My Account', icon: User },
+    { id: 'home', label: 'Home', icon: null, path: '/' },
+    { id: 'about', label: 'About Us', icon: Info, path: '/about' },
+    { id: 'shop', label: 'Collections', icon: Compass, path: '/shop' },
+    { id: 'orders', label: 'Orders', icon: ShoppingBag, path: '/orders' },
+    { id: 'contact', label: 'Contact Us', icon: Mail, path: '/contact' },
+    { id: 'account', label: 'My Account', icon: User, path: '/account' },
   ] as const;
 
-  const handleNavClick = (pageId: typeof activePage) => {
-    setActivePage(pageId);
+  const handleNavClick = (path: string) => {
+    navigate(path);
     setMobileMenuOpen(false);
   };
 
@@ -73,7 +67,7 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* 2. MAIN HEADER BAR */}
-      <nav style={{
+      <nav aria-label="Main navigation" style={{
         background: '#ffffff',
         borderBottom: '1px solid var(--border-light)',
         boxShadow: '0 4px 20px rgba(131, 39, 41, 0.02)',
@@ -96,6 +90,8 @@ export const Navbar: React.FC = () => {
 
           {/* Left: Mobile Hamburguer button */}
           <button
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileMenuOpen}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             style={{
               display: 'none',
@@ -112,21 +108,22 @@ export const Navbar: React.FC = () => {
           </button>
 
           {/* Logo & Brand */}
-          <div 
-            onClick={() => handleNavClick('home')}
+          <Link
+            to="/"
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
               cursor: 'pointer',
               userSelect: 'none',
-              zIndex: 1001
+              zIndex: 1001,
+              textDecoration: 'none'
             }}
             className="navbar-logo-container"
           >
-            <img 
-              src={logoPng} 
-              alt="Maa Diaries Logo" 
+            <img
+              src={logoPng}
+              alt="Maa Diaries Logo"
               style={{ width: '40px', height: '40px', borderRadius: '50%' }}
             />
             <div style={{ display: 'flex', flexDirection: 'column' }} className="brand-text-wrapper">
@@ -151,10 +148,10 @@ export const Navbar: React.FC = () => {
                 Aapki pasand hamari pehchaan
               </span>
             </div>
-          </div>
+          </Link>
 
           {/* Center: Wide Search Bar Form (Desktop Only) */}
-          <form 
+          <form
             onSubmit={handleNavSearchSubmit}
             style={{
               position: 'relative',
@@ -164,8 +161,9 @@ export const Navbar: React.FC = () => {
             }}
             className="desktop-search-form"
           >
-            <input 
+            <input
               type="text"
+              aria-label="Search products"
               placeholder="Search for gold necklace, earrings, rings..."
               value={navSearch}
               onChange={(e) => setNavSearch(e.target.value)}
@@ -190,8 +188,8 @@ export const Navbar: React.FC = () => {
                 e.currentTarget.style.boxShadow = 'none';
               }}
             />
-            <Search 
-              size={16} 
+            <Search
+              size={16}
               style={{
                 position: 'absolute',
                 left: '14px',
@@ -211,27 +209,10 @@ export const Navbar: React.FC = () => {
             gap: '18px',
             zIndex: 1001
           }} className="navbar-actions-container">
-            {/* Admin Lock */}
-            <button
-              onClick={() => handleNavClick('admin')}
-              style={{
-                cursor: 'pointer',
-                color: activePage === 'admin' ? 'var(--gold-primary)' : 'var(--text-secondary)',
-                background: 'none',
-                border: 'none',
-                padding: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-              title="Admin Portal"
-            >
-              <Lock size={18} />
-            </button>
-
             {/* Wishlist */}
             <button
-              onClick={() => handleNavClick('shop')}
+              aria-label="Wishlist"
+              onClick={() => handleNavClick('/wishlist')}
               style={{
                 cursor: 'pointer',
                 color: wishlist.length > 0 ? 'var(--gold-primary)' : 'var(--text-secondary)',
@@ -269,6 +250,7 @@ export const Navbar: React.FC = () => {
 
             {/* Cart Drawer Toggle */}
             <button
+              aria-label="Shopping cart"
               onClick={() => setCartOpen(true)}
               style={{
                 cursor: 'pointer',
@@ -318,11 +300,11 @@ export const Navbar: React.FC = () => {
           background: 'var(--bg-secondary)'
         }} className="desktop-nav">
           {navItems.map((item) => {
-            const isActive = activePage === item.id;
+            const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
             return (
-              <button
+              <Link
                 key={item.id}
-                onClick={() => handleNavClick(item.id)}
+                to={item.path}
                 style={{
                   fontSize: '0.8rem',
                   letterSpacing: '0.14em',
@@ -333,12 +315,13 @@ export const Navbar: React.FC = () => {
                   padding: '4px 0',
                   border: 'none',
                   background: 'none',
-                  position: 'relative'
+                  position: 'relative',
+                  textDecoration: 'none'
                 }}
                 className={`nav-link ${isActive ? 'active' : ''}`}
               >
                 {item.label}
-              </button>
+              </Link>
             );
           })}
         </div>
@@ -350,15 +333,16 @@ export const Navbar: React.FC = () => {
           width: '100%',
           boxSizing: 'border-box'
         }} className="mobile-search-row">
-          <form 
+          <form
             onSubmit={handleNavSearchSubmit}
             style={{
               position: 'relative',
               width: '100%'
             }}
           >
-            <input 
+            <input
               type="text"
+              aria-label="Search products"
               placeholder="Search for gold necklace, earrings, rings..."
               value={navSearch}
               onChange={(e) => setNavSearch(e.target.value)}
@@ -374,8 +358,8 @@ export const Navbar: React.FC = () => {
                 fontFamily: 'var(--font-sans)'
               }}
             />
-            <Search 
-              size={16} 
+            <Search
+              size={16}
               style={{
                 position: 'absolute',
                 left: '14px',
@@ -408,11 +392,11 @@ export const Navbar: React.FC = () => {
           }}>
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = activePage === item.id;
+              const isActive = location.pathname === item.path;
               return (
                 <button
                   key={item.id}
-                  onClick={() => handleNavClick(item.id)}
+                  onClick={() => handleNavClick(item.path)}
                   style={{
                     fontSize: '0.85rem',
                     letterSpacing: '0.1em',
@@ -435,128 +419,10 @@ export const Navbar: React.FC = () => {
                 </button>
               );
             })}
-            <button
-              onClick={() => handleNavClick('admin')}
-              style={{
-                fontSize: '0.85rem',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                fontWeight: activePage === 'admin' ? 600 : 500,
-                color: activePage === 'admin' ? 'var(--gold-primary)' : 'var(--text-muted)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                cursor: 'pointer',
-                padding: '12px 16px',
-                background: activePage === 'admin' ? 'var(--bg-secondary)' : 'transparent',
-                textAlign: 'left',
-                width: '100%',
-                borderRadius: '4px'
-              }}
-            >
-              <Lock size={14} />
-              Admin Dashboard
-            </button>
           </div>
         )}
       </nav>
 
-      {/* CSS overrides for desktop/mobile responsive nav */}
-      <style>{`
-        .nav-link {
-          position: relative;
-          transition: color 0.3s ease;
-        }
-        .nav-link::after {
-          content: '';
-          position: absolute;
-          width: 0;
-          height: 2px;
-          bottom: -4px;
-          left: 0;
-          background-color: var(--gold-hover);
-          transition: width 0.3s ease;
-        }
-        .nav-link:hover {
-          color: var(--gold-hover) !important;
-        }
-        .nav-link:hover::after, .nav-link.active::after {
-          width: 100%;
-        }
-        @media (max-width: 900px) {
-          .desktop-nav {
-            display: none !important;
-          }
-          .desktop-search-form {
-            display: none !important;
-          }
-          .mobile-search-row {
-            display: block !important;
-          }
-          .mobile-menu-btn {
-            display: flex !important;
-          }
-          .navbar-logo-container {
-            position: static !important;
-            transform: none !important;
-            flex: 1 !important;
-            min-width: 0 !important;
-          }
-          .navbar-row-1 {
-            padding: 12px 20px !important;
-          }
-          .nav-announcement {
-            padding: 6px 12px !important;
-            font-size: 0.6rem !important;
-            gap: 12px !important;
-          }
-          .announcement-separator {
-            display: none !important;
-          }
-          .brand-text-wrapper {
-            align-items: flex-start !important;
-          }
-          .navbar-actions-container {
-            gap: 6px !important;
-          }
-          .navbar-logo-container img {
-            width: 34px !important;
-            height: 34px !important;
-          }
-          .navbar-logo-container span:first-child {
-            font-size: 1rem !important;
-            letter-spacing: 0.08em !important;
-          }
-          .nav-announcement span {
-            text-align: center;
-          }
-        }
-        @media (max-width: 480px) {
-          .nav-announcement span:nth-of-type(2), .nav-announcement span:nth-of-type(3) { display: none !important; }
-          .navbar-row-1 { gap: 8px !important; padding: 10px 12px !important; }
-          .navbar-logo-container { gap: 8px !important; }
-          .brand-text-wrapper span:last-child { display: none !important; }
-          .mobile-search-row { padding: 0 12px 12px !important; }
-        }
-        @media (min-width: 901px) {
-          .desktop-nav {
-            display: flex !important;
-          }
-          .desktop-search-form {
-            display: block !important;
-          }
-          .mobile-search-row {
-            display: none !important;
-          }
-          .mobile-menu-btn {
-            display: none !important;
-          }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-5px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 };

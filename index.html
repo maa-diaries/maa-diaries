@@ -2,13 +2,87 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/src/assets/logo.png" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>Maa Diaries | Premium Rolled Gold & Anti-Tarnish Jewellery</title>
+    <meta name="description" content="Maa Diaries — Premium 18k rolled gold and anti-tarnish jewellery for the modern Indian woman. Handcrafted, water-resistant, hypoallergenic earrings, necklaces, bracelets, payals & more." />
+    <meta name="keywords" content="jewellery, anti-tarnish, rolled gold, gold plated, Indian jewellery, earrings, necklaces, bracelets, payals, kashmiri jhumke, hair accessories, Maa Diaries" />
+    <meta name="author" content="Maa Diaries" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://maadiaries.com/" />
+    <meta property="og:title" content="Maa Diaries | Premium Rolled Gold & Anti-Tarnish Jewellery" />
+    <meta property="og:description" content="Handcrafted 18k rolled gold and anti-tarnish jewellery for the modern Indian woman. Water-resistant, hypoallergenic, and made with love." />
+    <meta property="og:image" content="https://maadiaries.com/og-image.png" />
+    <meta property="og:site_name" content="Maa Diaries" />
+    <meta property="og:locale" content="en_IN" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://maadiaries.com/" />
+    <meta name="twitter:title" content="Maa Diaries | Premium Rolled Gold & Anti-Tarnish Jewellery" />
+    <meta name="twitter:description" content="Handcrafted 18k rolled gold and anti-tarnish jewellery for the modern Indian woman." />
+    <meta name="twitter:image" content="https://maadiaries.com/og-image.png" />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://maadiaries.com/" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Structured Data (JSON-LD) for SEO -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://maadiaries.com/#organization",
+            "name": "Maa Diaries",
+            "url": "https://maadiaries.com/",
+            "logo": {
+              "@type": "ImageObject",
+              "@id": "https://maadiaries.com/#logo",
+              "url": "https://maadiaries.com/favicon.png",
+              "caption": "Maa Diaries Logo"
+            },
+            "sameAs": [
+              "https://www.instagram.com/maadiaries"
+            ],
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "telephone": "+918448229528",
+              "contactType": "customer support",
+              "areaServed": "IN",
+              "availableLanguage": "English"
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://maadiaries.com/#website",
+            "url": "https://maadiaries.com/",
+            "name": "Maa Diaries",
+            "publisher": {
+              "@id": "https://maadiaries.com/#organization"
+            },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://maadiaries.com/shop?search={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          }
+        ]
+      }
+    </script>
+
+    <!-- Theme -->
+    <meta name="theme-color" content="#832729" />
+
     <!-- Google Fonts: Playfair Display (Serif) & Outfit (Sans) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=1200&q=80">
   </head>
   <body>
     <div id="root"></div>

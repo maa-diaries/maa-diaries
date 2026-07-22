@@ -1,11 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { ShoppingBag, ArrowLeft, Truck, MapPin, CheckCircle, Package, ChevronDown, ChevronUp, XCircle } from 'lucide-react';
 
 export const Orders: React.FC = () => {
-  const { orders, setActivePage, selectedOrderId, setSelectedOrderId, submitInquiry } = useStore();
+  const navigate = useNavigate();
+  const { orders, selectedOrderId, setSelectedOrderId, submitInquiry, currentUser, cancelOrder } = useStore();
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'All' | 'Active' | 'Delivered' | 'Cancelled'>('All');
+
+  // Filter orders to only show the current user's orders (admin sees all)
+  const userOrders = currentUser
+    ? orders.filter(order => {
+        const isAdmin = currentUser.email === 'admin@maadiaries.com';
+        if (isAdmin) return true;
+        return order.customerEmail.toLowerCase() === currentUser.email.toLowerCase()
+          || order.customerPhone === currentUser.phone;
+      })
+    : [];
 
   // Feedback Form states
   const [selectedFeedbackOrder, setSelectedFeedbackOrder] = useState<any | null>(null);
@@ -73,7 +85,7 @@ export const Orders: React.FC = () => {
       
       {/* Back Button */}
       <button 
-        onClick={() => setActivePage('home')}
+        onClick={() => navigate('/')}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -104,13 +116,13 @@ export const Orders: React.FC = () => {
       </div>
 
       <div className="orders-summary" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '14px', marginBottom: '32px' }}>
-        <div><span>Orders placed</span><strong>{orders.length}</strong></div>
-        <div><span>On the way</span><strong>{orders.filter(order => order.status === 'Shipped' || order.status === 'Pending' || order.status === 'Confirmed').length}</strong></div>
-        <div><span>Delivered</span><strong>{orders.filter(order => order.status === 'Delivered').length}</strong></div>
-        <div><span>Cancelled</span><strong style={{ color: '#e74c3c' }}>{orders.filter(order => order.status === 'Cancelled').length}</strong></div>
+        <div><span>Orders placed</span><strong>{userOrders.length}</strong></div>
+        <div><span>On the way</span><strong>{userOrders.filter(order => order.status === 'Shipped' || order.status === 'Pending' || order.status === 'Confirmed').length}</strong></div>
+        <div><span>Delivered</span><strong>{userOrders.filter(order => order.status === 'Delivered').length}</strong></div>
+        <div><span>Cancelled</span><strong style={{ color: '#e74c3c' }}>{userOrders.filter(order => order.status === 'Cancelled').length}</strong></div>
       </div>
 
-      {orders.length === 0 ? (
+      {userOrders.length === 0 ? (
         <div className="glass" style={{ textAlign: 'center', padding: '80px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
           <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', color: 'var(--text-muted)' }}>
             <ShoppingBag size={36} />
@@ -119,7 +131,7 @@ export const Orders: React.FC = () => {
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '24px', maxWidth: '360px', lineHeight: 1.5 }}>
             You haven't made any purchases yet. Click below to explore our luxury collections.
           </p>
-          <button onClick={() => setActivePage('shop')} className="gold-button" style={{ padding: '10px 28px' }}>
+          <button onClick={() => navigate('/shop')} className="gold-button" style={{ padding: '10px 28px' }}>
             Browse Collections
           </button>
         </div>
@@ -152,7 +164,7 @@ export const Orders: React.FC = () => {
           </div>
 
           {(() => {
-            const filtered = orders.filter(order => {
+            const filtered = userOrders.filter(order => {
               if (statusFilter === 'All') return true;
               if (statusFilter === 'Active') return order.status === 'Pending' || order.status === 'Confirmed' || order.status === 'Shipped';
               if (statusFilter === 'Delivered') return order.status === 'Delivered';
@@ -255,6 +267,7 @@ export const Orders: React.FC = () => {
                           src={item.product.images?.[0] || item.product.image}
                           alt={item.product.name}
                           title={item.product.name}
+                          loading="lazy"
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           onError={(e) => {
                             (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=200&q=80';
@@ -421,10 +434,11 @@ export const Orders: React.FC = () => {
                                   backgroundColor: 'var(--bg-secondary)',
                                   border: '1px solid var(--border-light)'
                                 }}>
-                                  <img
-                                    src={item.product.images?.[0] || item.product.image}
-                                    alt={item.product.name}
-                                    style={{
+                                   <img
+                                     src={item.product.images?.[0] || item.product.image}
+                                     alt={item.product.name}
+                                     loading="lazy"
+                                     style={{
                                       width: '100%',
                                       height: '100%',
                                       objectFit: 'cover'
@@ -509,6 +523,29 @@ export const Orders: React.FC = () => {
                               style={{ width: '100%', padding: '10px', fontSize: '0.8rem', marginTop: '16px' }}
                             >
                               Give Feedback on this Order
+                            </button>
+                          )}
+                          {(order.status === 'Pending' || order.status === 'Confirmed') && (
+                            <button
+                              onClick={async () => {
+                                if (window.confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
+                                  await cancelOrder(order.id);
+                                }
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '10px',
+                                fontSize: '0.8rem',
+                                marginTop: '16px',
+                                background: 'none',
+                                border: '1px solid #e74c3c',
+                                borderRadius: '6px',
+                                color: '#e74c3c',
+                                cursor: 'pointer',
+                                fontWeight: 600
+                              }}
+                            >
+                              Cancel Order
                             </button>
                           )}
                         </div>

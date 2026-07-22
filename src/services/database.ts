@@ -1,6 +1,11 @@
 import { INITIAL_PRODUCTS } from '../data/products';
 import type { Product } from '../data/products';
 import { supabase, isSupabaseConfigured } from './supabase';
+import { type Coupon } from './coupons';
+import { type SiteSettings } from './siteSettings';
+export type { Coupon, SiteSettings };
+
+const generateId = () => crypto.randomUUID().slice(0, 12);
 
 export interface OrderItem {
   product: {
@@ -41,6 +46,8 @@ export interface Order {
   totalAmount: number;
   status: 'Pending' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled';
   trackingNumber?: string;
+  txnid?: string;
+  payuId?: string;
   createdAt: string;
 }
 
@@ -61,6 +68,8 @@ export interface ProductReview {
   rating: number;
   comment: string;
   createdAt: string;
+  replyComment?: string;
+  repliedAt?: string;
 }
 
 
@@ -74,7 +83,7 @@ const mapProduct = (row: any): Product => ({
   price: Number(row.price),
   originalPrice: row.original_price ? Number(row.original_price) : undefined,
   discount: row.discount ? Number(row.discount) : undefined,
-  image: row.image || '',
+  image: (row.image || '').replace(/^\/?src\/assets\/products\//, '/products/').replace(/^\/?assets\/products\//, '/products/'),
   rating: Number(row.rating || 5.0),
   reviewsCount: Number(row.reviews_count || 0),
   metalOptions: row.metal_options || [],
@@ -109,6 +118,8 @@ const mapOrder = (row: any): Order => ({
   totalAmount: Number(row.total_amount),
   status: row.status,
   trackingNumber: row.tracking_number || undefined,
+  txnid: row.txnid || undefined,
+  payuId: row.payu_id || undefined,
   createdAt: row.created_at
 });
 
@@ -122,11 +133,16 @@ const mapInquiry = (row: any): Inquiry => ({
   createdAt: row.created_at
 });
 
+function validateOrderTotal(items: { product: { price: number }; quantity: number }[], shippingCost: number, submittedTotal: number): boolean {
+  const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const maxPossible = subtotal + shippingCost;
+  return submittedTotal >= 0 && submittedTotal <= maxPossible + 1;
+}
+
 export const databaseService = {
   // --- Products API ---
   async getProducts(): Promise<Product[]> {
     if (!isSupabaseConfigured) {
-      console.warn("Supabase is not configured. Returning default seeded products.");
       return INITIAL_PRODUCTS;
     }
     const { data, error } = await supabase
@@ -189,7 +205,7 @@ export const databaseService = {
   },
 
   async addProduct(productData: Omit<Product, 'id'>): Promise<Product> {
-    const id = `prod-${Math.random().toString(36).substr(2, 9)}`;
+    const id = `prod-${generateId()}`;
     const newProduct: Product = {
       ...productData,
       id,
@@ -268,7 +284,6 @@ export const databaseService = {
   // --- Orders API ---
   async getOrders(): Promise<Order[]> {
     if (!isSupabaseConfigured) {
-      console.warn("Supabase is not configured. Returning empty order list.");
       return [];
     }
     const { data, error } = await supabase
@@ -280,7 +295,10 @@ export const databaseService = {
   },
 
   async placeOrder(orderData: Omit<Order, 'id' | 'createdAt'>): Promise<Order> {
-    const id = `MD-${Math.floor(100000 + Math.random() * 900000)}`;
+    if (!validateOrderTotal(orderData.items, orderData.shippingCost, orderData.totalAmount)) {
+      throw new Error("Order total mismatch. Please try again.");
+    }
+    const id = `MD-${generateId()}`;
     const createdAt = new Date().toISOString();
     const newOrder: Order = {
       ...orderData,
@@ -311,10 +329,24 @@ export const databaseService = {
         total_amount: orderData.totalAmount,
         status: 'Pending',
         tracking_number: orderData.trackingNumber || null,
+        txnid: orderData.txnid || null,
+        payu_id: orderData.payuId || null,
         created_at: createdAt
       });
     if (error) throw error;
     return newOrder;
+  },
+
+  async getOrderByTxnid(txnid: string): Promise<Order | null> {
+    if (!isSupabaseConfigured) return null;
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('txnid', txnid)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return mapOrder(data);
   },
 
   async updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
@@ -356,7 +388,6 @@ export const databaseService = {
   // --- Inquiries API ---
   async getInquiries(): Promise<Inquiry[]> {
     if (!isSupabaseConfigured) {
-      console.warn("Supabase is not configured. Returning empty inquiries.");
       return [];
     }
     const { data, error } = await supabase
@@ -368,7 +399,7 @@ export const databaseService = {
   },
 
   async submitInquiry(inquiryData: Omit<Inquiry, 'id' | 'createdAt'>): Promise<Inquiry> {
-    const id = `INQ-${Math.floor(100000 + Math.random() * 900000)}`;
+    const id = `INQ-${generateId()}`;
     const createdAt = new Date().toISOString();
     const newInquiry: Inquiry = {
       ...inquiryData,
@@ -397,12 +428,11 @@ export const databaseService = {
   // --- Users API ---
   async getUsers(): Promise<any[]> {
     if (!isSupabaseConfigured) {
-      console.warn("Supabase is not configured. Returning empty registered users.");
       return [];
     }
     const { data, error } = await supabase
       .from('registered_users')
-      .select('*');
+      .select('name, email, phone, address_line, city, state, pincode');
     if (error) throw error;
     return (data || []).map((row: any) => ({
       name: row.name,
@@ -411,21 +441,57 @@ export const databaseService = {
       addressLine: row.address_line,
       city: row.city,
       state: row.state,
-      pincode: row.pincode,
-      password: row.password
+      pincode: row.pincode
     }));
   },
 
-  async registerUser(profile: any): Promise<boolean> {
+  async getUserByEmail(email: string): Promise<any | null> {
+    if (!isSupabaseConfigured) return null;
+    const { data, error } = await supabase
+      .from('registered_users')
+      .select('name, email, phone, address_line, city, state, pincode')
+      .eq('email', email)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      addressLine: data.address_line,
+      city: data.city,
+      state: data.state,
+      pincode: data.pincode
+    };
+  },
+
+  async getUserByPhone(phone: string): Promise<any | null> {
+    if (!isSupabaseConfigured) return null;
+    const { data, error } = await supabase
+      .from('registered_users')
+      .select('name, email, phone, address_line, city, state, pincode')
+      .eq('phone', phone)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      addressLine: data.address_line,
+      city: data.city,
+      state: data.state,
+      pincode: data.pincode
+    };
+  },
+
+  async registerUserProfile(profile: { name: string; email: string; phone: string; addressLine: string; city: string; state: string; pincode: string }): Promise<boolean> {
     if (!isSupabaseConfigured) {
-      throw new Error("Supabase is not configured. Cannot register user.");
+      throw new Error("Supabase is not configured. Cannot register user profile.");
     }
-    const users = await this.getUsers();
-    const exists = users.some(u => 
-      u.email.toLowerCase() === profile.email.toLowerCase() || 
-      u.phone === profile.phone
-    );
-    if (exists) return false;
+    // Check if profile already exists
+    const existing = await this.getUserByEmail(profile.email);
+    if (existing) return false;
 
     const { error } = await supabase
       .from('registered_users')
@@ -436,8 +502,7 @@ export const databaseService = {
         address_line: profile.addressLine,
         city: profile.city,
         state: profile.state,
-        pincode: profile.pincode,
-        password: profile.password
+        pincode: profile.pincode
       });
     if (error) throw error;
     return true;
@@ -446,7 +511,6 @@ export const databaseService = {
   // --- Product Reviews API ---
   async getAllReviews(): Promise<ProductReview[]> {
     if (!isSupabaseConfigured) {
-      console.warn("Supabase is not configured. Returning empty reviews list.");
       return [];
     }
     const { data, error } = await supabase
@@ -460,13 +524,14 @@ export const databaseService = {
       userName: row.user_name,
       rating: Number(row.rating),
       comment: row.comment,
-      createdAt: row.created_at
+      createdAt: row.created_at,
+      replyComment: row.reply_comment || undefined,
+      repliedAt: row.replied_at || undefined
     }));
   },
 
   async getProductReviews(productId: string): Promise<ProductReview[]> {
     if (!isSupabaseConfigured) {
-      console.warn("Supabase is not configured. Returning empty product reviews.");
       return [];
     }
     const { data, error } = await supabase
@@ -481,12 +546,14 @@ export const databaseService = {
       userName: row.user_name,
       rating: Number(row.rating),
       comment: row.comment,
-      createdAt: row.created_at
+      createdAt: row.created_at,
+      replyComment: row.reply_comment || undefined,
+      repliedAt: row.replied_at || undefined
     }));
   },
 
   async submitProductReview(reviewData: Omit<ProductReview, 'id' | 'createdAt'>): Promise<ProductReview> {
-    const id = `rev-${Math.random().toString(36).substr(2, 9)}`;
+    const id = `rev-${generateId()}`;
     const createdAt = new Date().toISOString();
     const newReview: ProductReview = {
       ...reviewData,
@@ -510,16 +577,17 @@ export const databaseService = {
     if (error) throw error;
 
     // Recalculate average rating & reviewsCount for the product
-    const productReviews = await this.getProductReviews(reviewData.productId);
-    const totalRating = productReviews.reduce((sum, r) => sum + r.rating, 0);
-    const avgRating = Number((totalRating / productReviews.length).toFixed(1));
+    const { data: productReviews } = await supabase
+      .from('product_reviews')
+      .select('rating')
+      .eq('product_id', reviewData.productId);
 
-    const products = await this.getProducts();
-    const pIndex = products.findIndex(p => p.id === reviewData.productId);
-    if (pIndex !== -1) {
-      products[pIndex].rating = avgRating;
-      products[pIndex].reviewsCount = productReviews.length;
-      await this.updateProduct(products[pIndex]);
+    if (productReviews) {
+      const avgRating = productReviews.reduce((sum: number, r: any) => sum + r.rating, 0) / productReviews.length;
+      await supabase
+        .from('products')
+        .update({ rating: Math.round(avgRating * 10) / 10, reviews_count: productReviews.length })
+        .eq('id', reviewData.productId);
     }
 
     return newReview;
@@ -547,45 +615,442 @@ export const databaseService = {
       'kashmiri_jhumke',
       'hair_accessories'
     ];
-    if (!isSupabaseConfigured) {
-      console.warn("Supabase is not configured. Returning default categories list.");
-      return defaultCategories;
-    }
-    const { data, error } = await supabase
-      .from('categories')
-      .select('name');
-    if (error) throw error;
-    if (data && data.length > 0) {
-      return data.map((row: any) => row.name.toLowerCase());
-    } else {
-      // Seed default categories into Supabase if empty
-      for (const cat of defaultCategories) {
-        await supabase.from('categories').insert({ name: cat });
+    const getLocal = () => {
+      const local = localStorage.getItem('md_categories');
+      return local ? JSON.parse(local) : defaultCategories;
+    };
+    if (!isSupabaseConfigured) return getLocal();
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('name');
+      if (error) throw error;
+      if (data && data.length > 0) {
+        const list = data.map((row: any) => row.name.toLowerCase());
+        localStorage.setItem('md_categories', JSON.stringify(list));
+        return list;
+      } else {
+        // Seed default categories into Supabase if empty
+        await supabase.from('categories').insert(defaultCategories.map(name => ({ name })));
+        localStorage.setItem('md_categories', JSON.stringify(defaultCategories));
+        return defaultCategories;
       }
-      return defaultCategories;
+    } catch (err) {
+      console.warn("Supabase getCategories failed, falling back to localStorage:", err);
+      return getLocal();
     }
   },
 
   async addCategory(name: string): Promise<void> {
     const cleaned = name.trim().toLowerCase();
-    if (!isSupabaseConfigured) {
-      throw new Error("Supabase is not configured. Cannot add category.");
+    const local = localStorage.getItem('md_categories');
+    const list: string[] = local ? JSON.parse(local) : [];
+    if (!list.includes(cleaned)) {
+      list.push(cleaned);
+      localStorage.setItem('md_categories', JSON.stringify(list));
     }
-    const { error } = await supabase
-      .from('categories')
-      .insert({ name: cleaned });
-    if (error) throw error;
+    if (!isSupabaseConfigured) return;
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .insert({ name: cleaned });
+      if (error) throw error;
+    } catch (err) {
+      console.warn("Supabase addCategory failed, saved to localStorage only:", err);
+    }
   },
 
   async deleteCategory(name: string): Promise<void> {
     const cleaned = name.trim().toLowerCase();
-    if (!isSupabaseConfigured) {
-      throw new Error("Supabase is not configured. Cannot delete category.");
+    const local = localStorage.getItem('md_categories');
+    if (local) {
+      let list: string[] = JSON.parse(local);
+      list = list.filter(cat => cat !== cleaned);
+      localStorage.setItem('md_categories', JSON.stringify(list));
     }
-    const { error } = await supabase
-      .from('categories')
-      .delete()
-      .eq('name', cleaned);
-    if (error) throw error;
+    if (!isSupabaseConfigured) return;
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('name', cleaned);
+      if (error) throw error;
+    } catch (err) {
+      console.warn("Supabase deleteCategory failed, deleted from localStorage only:", err);
+    }
+  },
+
+  async replyToReview(reviewId: string, replyComment: string): Promise<void> {
+    if (!isSupabaseConfigured) return;
+    try {
+      const { error } = await supabase
+        .from('product_reviews')
+        .update({
+          reply_comment: replyComment,
+          replied_at: new Date().toISOString()
+        })
+        .eq('id', reviewId);
+      if (error) throw error;
+    } catch (err) {
+      console.warn("Supabase replyToReview failed:", err);
+    }
+  },
+
+  async getCoupons(): Promise<Coupon[]> {
+    const getLocal = () => {
+      const local = localStorage.getItem('md_coupons');
+      return local ? JSON.parse(local) : [];
+    };
+    if (!isSupabaseConfigured) return getLocal();
+    try {
+      const { data, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const list = (data || []).map((row: any) => ({
+        code: row.code,
+        type: row.type as 'percent' | 'fixed',
+        value: Number(row.value),
+        minOrder: Number(row.min_order || 0),
+        active: Boolean(row.active),
+        description: row.description || undefined
+      }));
+      localStorage.setItem('md_coupons', JSON.stringify(list));
+      return list;
+    } catch (err) {
+      console.warn("Supabase getCoupons failed, falling back to localStorage:", err);
+      return getLocal();
+    }
+  },
+
+  async getCouponByCode(code: string): Promise<Coupon | null> {
+    const getLocal = () => {
+      const local = localStorage.getItem('md_coupons');
+      const list: Coupon[] = local ? JSON.parse(local) : [];
+      return list.find(item => item.code.toUpperCase() === code.toUpperCase()) || null;
+    };
+    if (!isSupabaseConfigured) return getLocal();
+    try {
+      const { data, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', code.toUpperCase())
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      return {
+        code: data.code,
+        type: data.type as 'percent' | 'fixed',
+        value: Number(data.value),
+        minOrder: Number(data.min_order || 0),
+        active: Boolean(data.active),
+        description: data.description || undefined
+      };
+    } catch (err) {
+      console.warn("Supabase getCouponByCode failed, falling back to localStorage:", err);
+      return getLocal();
+    }
+  },
+
+  async saveCoupon(coupon: Coupon): Promise<void> {
+    const local = localStorage.getItem('md_coupons');
+    let list: Coupon[] = local ? JSON.parse(local) : [];
+    const idx = list.findIndex(item => item.code === coupon.code);
+    if (idx !== -1) {
+      list[idx] = coupon;
+    } else {
+      list.push(coupon);
+    }
+    localStorage.setItem('md_coupons', JSON.stringify(list));
+    if (!isSupabaseConfigured) return;
+    try {
+      const { error } = await supabase
+        .from('coupons')
+        .upsert({
+          code: coupon.code,
+          type: coupon.type,
+          value: coupon.value,
+          min_order: coupon.minOrder,
+          active: coupon.active,
+          description: coupon.description || null
+        });
+      if (error) throw error;
+    } catch (err) {
+      console.warn("Supabase saveCoupon failed, saved to localStorage only:", err);
+    }
+  },
+
+  async deleteCoupon(code: string): Promise<void> {
+    const local = localStorage.getItem('md_coupons');
+    if (local) {
+      let list: Coupon[] = JSON.parse(local);
+      list = list.filter(item => item.code !== code);
+      localStorage.setItem('md_coupons', JSON.stringify(list));
+    }
+    if (!isSupabaseConfigured) return;
+    try {
+      const { error } = await supabase
+        .from('coupons')
+        .delete()
+        .eq('code', code);
+      if (error) throw error;
+    } catch (err) {
+      console.warn("Supabase deleteCoupon failed, deleted from localStorage only:", err);
+    }
+  },
+
+  async getSiteSettings(): Promise<SiteSettings> {
+    const defaultSettings: SiteSettings = {
+      whatsapp: '918448229528',
+      supportPhone: '+918448229528',
+      supportEmail: 'support@maadiaries.com',
+      supportAddress: 'New Delhi, India',
+      freeShippingThreshold: 1000,
+      seoTitle: 'Maa Diaries | Premium Anti-Tarnish Jewellery',
+      seoDescription: 'Premium anti-tarnish jewellery and everyday elegance.',
+      heroTitle: 'Anti-Tarnish Elegance',
+      heroSubtitle: 'Premium 18k Rolled Gold',
+      heroDescription: 'Beautifully crafted jewelry micro-plated with a tarnish-resistant polymer seal. Designed for daily wear, sweat, and showers.',
+      heroImage: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1200&q=80',
+      homeNewArrivals: [],
+      homeBestSellers: [],
+      homeTrending: [],
+      homeCategories: [],
+      instagramFeedUrls: []
+    };
+    const getLocal = () => {
+      const local = localStorage.getItem('md_site_settings');
+      return local ? JSON.parse(local) : defaultSettings;
+    };
+    if (!isSupabaseConfigured) return getLocal();
+    try {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('id', 'default')
+        .maybeSingle();
+      
+      if (error) throw error;
+      if (!data) {
+        // Row does not exist, insert default
+        await supabase.from('site_settings').insert({
+          id: 'default',
+          whatsapp: defaultSettings.whatsapp,
+          support_phone: defaultSettings.supportPhone,
+          support_email: defaultSettings.supportEmail,
+          support_address: defaultSettings.supportAddress,
+          free_shipping_threshold: defaultSettings.freeShippingThreshold,
+          seo_title: defaultSettings.seoTitle,
+          seo_description: defaultSettings.seoDescription,
+          hero_title: defaultSettings.heroTitle,
+          hero_subtitle: defaultSettings.heroSubtitle,
+          hero_description: defaultSettings.heroDescription,
+          hero_image: defaultSettings.heroImage,
+          home_new_arrivals: [],
+          home_best_sellers: [],
+          home_trending: [],
+          home_categories: [],
+          instagram_feed_urls: []
+        });
+        return defaultSettings;
+      }
+      const settings: SiteSettings = {
+        whatsapp: data.whatsapp || defaultSettings.whatsapp,
+        supportPhone: data.support_phone || defaultSettings.supportPhone,
+        supportEmail: data.support_email || defaultSettings.supportEmail,
+        supportAddress: data.support_address || defaultSettings.supportAddress,
+        freeShippingThreshold: Number(data.free_shipping_threshold ?? defaultSettings.freeShippingThreshold),
+        seoTitle: data.seo_title || defaultSettings.seoTitle,
+        seoDescription: data.seo_description || defaultSettings.seoDescription,
+        heroTitle: data.hero_title || defaultSettings.heroTitle,
+        heroSubtitle: data.hero_subtitle || defaultSettings.heroSubtitle,
+        heroDescription: data.hero_description || defaultSettings.heroDescription,
+        heroImage: data.hero_image || defaultSettings.heroImage,
+        homeNewArrivals: Array.isArray(data.home_new_arrivals) ? data.home_new_arrivals : [],
+        homeBestSellers: Array.isArray(data.home_best_sellers) ? data.home_best_sellers : [],
+        homeTrending: Array.isArray(data.home_trending) ? data.home_trending : [],
+        homeCategories: Array.isArray(data.home_categories) ? data.home_categories : [],
+        instagramFeedUrls: Array.isArray(data.instagram_feed_urls) ? data.instagram_feed_urls : []
+      };
+      localStorage.setItem('md_site_settings', JSON.stringify(settings));
+      return settings;
+    } catch (err) {
+      console.warn("Supabase getSiteSettings failed, falling back to localStorage:", err);
+      return getLocal();
+    }
+  },
+
+  async saveSiteSettings(settings: SiteSettings): Promise<void> {
+    localStorage.setItem('md_site_settings', JSON.stringify(settings));
+    if (!isSupabaseConfigured) return;
+    try {
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert({
+          id: 'default',
+          whatsapp: settings.whatsapp,
+          support_phone: settings.supportPhone,
+          support_email: settings.supportEmail,
+          support_address: settings.supportAddress,
+          free_shipping_threshold: settings.freeShippingThreshold,
+          seo_title: settings.seoTitle,
+          seo_description: settings.seoDescription,
+          hero_title: settings.heroTitle,
+          hero_subtitle: settings.heroSubtitle,
+          hero_description: settings.heroDescription,
+          hero_image: settings.heroImage,
+          home_new_arrivals: settings.homeNewArrivals,
+          home_best_sellers: settings.homeBestSellers,
+          home_trending: settings.homeTrending,
+          home_categories: settings.homeCategories,
+          instagram_feed_urls: settings.instagramFeedUrls,
+          updated_at: new Date().toISOString()
+        });
+      if (error) throw error;
+    } catch (err) {
+      console.warn("Supabase saveSiteSettings failed, saved to localStorage only:", err);
+    }
+  },
+
+  async getMedia(): Promise<{ id: string; url: string; name: string; createdAt: string; }[]> {
+    const getLocal = () => {
+      const local = localStorage.getItem('md_media');
+      return local ? JSON.parse(local) : [];
+    };
+    if (!isSupabaseConfigured) return getLocal();
+    try {
+      const { data, error } = await supabase
+        .from('media_library')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const list = (data || []).map((row: any) => ({
+        id: String(row.id),
+        url: row.url,
+        name: row.name || 'Untitled Image',
+        createdAt: row.created_at
+      }));
+      localStorage.setItem('md_media', JSON.stringify(list));
+      return list;
+    } catch (err) {
+      console.warn("Supabase getMedia failed, falling back to localStorage:", err);
+      return getLocal();
+    }
+  },
+
+  async addMedia(url: string, name: string): Promise<{ id: string; url: string; name: string; createdAt: string; }> {
+    const getLocal = () => {
+      const local = localStorage.getItem('md_media');
+      const list = local ? JSON.parse(local) : [];
+      const newMedia = {
+        id: 'local_' + Date.now(),
+        url,
+        name,
+        createdAt: new Date().toISOString()
+      };
+      list.unshift(newMedia);
+      localStorage.setItem('md_media', JSON.stringify(list));
+      return newMedia;
+    };
+    if (!isSupabaseConfigured) return getLocal();
+    try {
+      const { data, error } = await supabase
+        .from('media_library')
+        .insert({ url, name })
+        .select('*')
+        .single();
+      if (error) throw error;
+      const newMedia = {
+        id: String(data.id),
+        url: data.url,
+        name: data.name || 'Untitled Image',
+        createdAt: data.created_at
+      };
+      const local = localStorage.getItem('md_media');
+      const list = local ? JSON.parse(local) : [];
+      list.unshift(newMedia);
+      localStorage.setItem('md_media', JSON.stringify(list));
+      return newMedia;
+    } catch (err) {
+      console.warn("Supabase addMedia failed, saved to localStorage only:", err);
+      return getLocal();
+    }
+  },
+
+  async deleteMedia(id: string): Promise<void> {
+    const local = localStorage.getItem('md_media');
+    if (local) {
+      let list = JSON.parse(local);
+      list = list.filter((item: any) => item.id !== id);
+      localStorage.setItem('md_media', JSON.stringify(list));
+    }
+    if (!isSupabaseConfigured) return;
+    try {
+      const { error } = await supabase
+        .from('media_library')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    } catch (err) {
+      console.warn("Supabase deleteMedia failed, deleted from localStorage only:", err);
+    }
+  },
+
+  async getEmailLogs(): Promise<{ id: string; recipientEmail: string; subject: string; body: string; status: string; createdAt: string; }[]> {
+    const getLocal = () => {
+      const local = localStorage.getItem('md_email_logs');
+      return local ? JSON.parse(local) : [];
+    };
+    if (!isSupabaseConfigured) return getLocal();
+    try {
+      const { data, error } = await supabase
+        .from('email_logs')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const list = (data || []).map((row: any) => ({
+        id: String(row.id),
+        recipientEmail: row.recipient_email,
+        subject: row.subject,
+        body: row.body,
+        status: row.status,
+        createdAt: row.created_at
+      }));
+      localStorage.setItem('md_email_logs', JSON.stringify(list));
+      return list;
+    } catch (err) {
+      console.warn("Supabase getEmailLogs failed, falling back to localStorage:", err);
+      return getLocal();
+    }
+  },
+
+  async logEmailNotification(recipientEmail: string, subject: string, body: string, status: string = 'sent'): Promise<void> {
+    const local = localStorage.getItem('md_email_logs');
+    const list = local ? JSON.parse(local) : [];
+    const newLog = {
+      id: 'local_' + Date.now(),
+      recipientEmail,
+      subject,
+      body,
+      status,
+      createdAt: new Date().toISOString()
+    };
+    list.unshift(newLog);
+    localStorage.setItem('md_email_logs', JSON.stringify(list));
+    if (!isSupabaseConfigured) return;
+    try {
+      const { error } = await supabase
+        .from('email_logs')
+        .insert({
+          recipient_email: recipientEmail,
+          subject,
+          body,
+          status
+        });
+      if (error) throw error;
+    } catch (err) {
+      console.warn("Supabase logEmailNotification failed, logged in localStorage only:", err);
+    }
   }
 };

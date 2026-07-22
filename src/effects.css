@@ -5,30 +5,27 @@
 
 /* ---- Scroll-Reveal base ----------------------------------- */
 .reveal {
-  opacity: 0;
-  transform: translateY(32px);
-  transition: opacity 0.72s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.72s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 1;
+  transform: none;
+  transition: none;
 }
 .reveal.visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: none;
 }
 .reveal-left {
-  opacity: 0;
-  transform: translateX(-40px);
-  transition: opacity 0.72s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.72s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 1;
+  transform: none;
+  transition: none;
 }
-.reveal-left.visible { opacity: 1; transform: translateX(0); }
+.reveal-left.visible { opacity: 1; transform: none; }
 
 .reveal-right {
-  opacity: 0;
-  transform: translateX(40px);
-  transition: opacity 0.72s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.72s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 1;
+  transform: none;
+  transition: none;
 }
-.reveal-right.visible { opacity: 1; transform: translateX(0); }
+.reveal-right.visible { opacity: 1; transform: none; }
 
 /* Stagger delays for grid children */
 .stagger-grid > *:nth-child(1) { transition-delay: 0ms; }
@@ -55,14 +52,16 @@
 #cursor-glow {
   pointer-events: none;
   position: fixed;
+  top: 0;
+  left: 0;
   width: 340px;
   height: 340px;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(131,39,41,0.07) 0%, transparent 70%);
-  transform: translate(-50%, -50%);
-  transition: left 0.18s ease, top 0.18s ease;
-  z-index: 9999;
+  transform: translate3d(-50%, -50%, 0);
+  z-index: 1;
   mix-blend-mode: multiply;
+  will-change: transform;
 }
 
 /* ---- Ripple on buttons ------------------------------------ */
@@ -86,18 +85,6 @@
   margin-top: -30px;
 }
 
-/* ---- Enhanced glass card hover ---------------------------- */
-.glass {
-  transition: border-color 0.35s ease,
-              box-shadow 0.35s ease,
-              transform 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-.glass:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 50px rgba(131, 39, 41, 0.12) !important;
-  border-color: rgba(171, 141, 79, 0.4) !important;
-}
-
 /* ---- Product card deep lift ------------------------------- */
 .product-card:hover,
 .shop-card:hover {
@@ -116,28 +103,6 @@ textarea:focus {
   animation: inputGlow 1.8s ease-in-out infinite;
   border-color: var(--gold-primary) !important;
   outline: none;
-}
-
-/* ---- Animated gold underline on nav links ---------------- */
-nav a,
-.nav-link {
-  position: relative;
-}
-nav a::after,
-.nav-link::after {
-  content: '';
-  position: absolute;
-  bottom: -3px;
-  left: 0;
-  width: 0%;
-  height: 2px;
-  background: linear-gradient(90deg, var(--gold-primary), var(--gold-hover));
-  border-radius: 1px;
-  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-nav a:hover::after,
-.nav-link:hover::after {
-  width: 100%;
 }
 
 /* ---- Section heading shimmer ----------------------------- */
@@ -267,16 +232,6 @@ button[title="Chat on WhatsApp"] {
   border-radius: 1px;
   margin: 12px 0;
   animation: dividerGrow 0.8s cubic-bezier(0.16,1,0.3,1) both;
-}
-
-/* ---- Footer link hover slide ----------------------------- */
-footer a {
-  position: relative;
-  transition: color 0.25s ease, transform 0.25s ease !important;
-}
-footer a:hover {
-  color: var(--gold-primary) !important;
-  transform: translateX(4px) !important;
 }
 
 /* ---- Reduce motion safety -------------------------------- */

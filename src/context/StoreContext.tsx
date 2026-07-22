@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Product } from '../data/products';
 import { databaseService } from '../services/database';
-import type { Order, OrderItem, Inquiry, ProductReview } from '../services/database';
+import type { Order, OrderItem, Inquiry, ProductReview, Coupon, SiteSettings } from '../services/database';
+import { defaultSiteSettings } from '../services/siteSettings';
+import { supabase, isSupabaseConfigured } from '../services/supabase';
 
 export interface CartItem {
   key: string; // composite key: id-metal-stone-engraving
@@ -33,7 +35,6 @@ export interface UserProfile {
   city: string;
   state: string;
   pincode: string;
-  password?: string;
 }
 
 interface StoreContextType {
@@ -59,7 +60,8 @@ interface StoreContextType {
     estimatedDelivery: string;
     courierPartner: string;
     shippingCost: number;
-  }, paymentMethod: 'COD' | 'Online', paymentStatus: 'Pending' | 'Paid') => Promise<Order>;
+    appliedCouponCode?: string;
+  }, paymentMethod: 'COD' | 'Online', paymentStatus: 'Pending' | 'Paid', txnid?: string) => Promise<Order>;
   inquiries: Inquiry[];
   refreshInquiries: () => void;
   submitInquiry: (inquiry: Omit<Inquiry, 'id' | 'createdAt'>) => Promise<Inquiry>;
@@ -84,16 +86,33 @@ interface StoreContextType {
   
   currentUser: UserProfile | null;
   loginUser: (emailOrPhone: string, password?: string) => Promise<boolean>;
-  registerUser: (profile: UserProfile) => Promise<boolean>;
+  registerUser: (profile: UserProfile, password?: string) => Promise<{ success: boolean; needsVerification?: boolean; message?: string }>;
+  resetPassword: (email: string) => Promise<{ success: boolean; message: string }>;
+  cancelOrder: (orderId: string) => Promise<boolean>;
   logoutUser: () => void;
   getProductReviews: (productId: string) => Promise<ProductReview[]>;
   submitProductReview: (review: Omit<ProductReview, 'id' | 'createdAt'>) => Promise<ProductReview>;
-  sendEmailViaResend: (type: 'order' | 'feedback' | 'review', payload: any) => Promise<void>;
+  sendEmailViaResend: (type: 'order' | 'feedback' | 'review' | 'delivery_update', payload: any) => Promise<void>;
   categories: string[];
   addCategory: (name: string) => Promise<void>;
   deleteCategory: (name: string) => Promise<void>;
   refreshCategories: () => Promise<void>;
   resetAndSeedProducts: () => Promise<void>;
+  siteSettings: SiteSettings;
+  refreshSiteSettings: () => Promise<void>;
+  saveSiteSettings: (settings: SiteSettings) => Promise<void>;
+  coupons: Coupon[];
+  refreshCoupons: () => Promise<void>;
+  saveCoupon: (coupon: Coupon) => Promise<void>;
+  deleteCoupon: (code: string) => Promise<void>;
+  mediaItems: { id: string; url: string; name: string; createdAt: string; }[];
+  refreshMedia: () => Promise<void>;
+  addMedia: (url: string, name: string) => Promise<void>;
+  deleteMedia: (id: string) => Promise<void>;
+  emailLogs: { id: string; recipientEmail: string; subject: string; body: string; status: string; createdAt: string; }[];
+  refreshEmailLogs: () => Promise<void>;
+  triggerEmailNotification: (recipientEmail: string, subject: string, body: string) => Promise<void>;
+  replyToReview: (reviewId: string, replyComment: string) => Promise<void>;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -106,50 +125,189 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(defaultSiteSettings);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [mediaItems, setMediaItems] = useState<{ id: string; url: string; name: string; createdAt: string; }[]>([]);
+  const [emailLogs, setEmailLogs] = useState<{ id: string; recipientEmail: string; subject: string; body: string; status: string; createdAt: string; }[]>([]);
   
   // UI States
   const [activePage, setActivePageState] = useState<'home' | 'about' | 'shop' | 'contact' | 'faq' | 'account' | 'tracking' | 'admin' | 'product-details' | 'orders'>('home');
 
-  // Load current user from localStorage on mount
+  // Load current user from localStorage on mount + listen for Supabase auth changes
   useEffect(() => {
-    const savedUser = localStorage.getItem('md_current_user_v1');
-    if (savedUser) {
-      try {
-        setCurrentUser(JSON.parse(savedUser));
-      } catch (e) {
-        console.error("Failed to parse current user", e);
+    if (!isSupabaseConfigured) {
+      // Restore from localStorage first (fast) in mock/no-supabase mode
+      const savedUser = localStorage.getItem('md_current_user_v1');
+      if (savedUser) {
+        try {
+          setCurrentUser(JSON.parse(savedUser));
+        } catch (e) {
+          console.error("Failed to parse current user", e);
+        }
       }
+      return;
     }
+
+    // If Supabase is configured, ALWAYS check session, do NOT trust localStorage
+    supabase.auth.getSession().then(({ data }: any) => {
+      if (data.session?.user) {
+        databaseService.getUserByEmail(data.session.user.email!).then(profile => {
+          if (profile) {
+            setCurrentUser(profile);
+          } else {
+            setCurrentUser(null);
+          }
+        }).catch(() => setCurrentUser(null));
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: string, session: any) => {
+      if (session?.user) {
+        const profile = await databaseService.getUserByEmail(session.user.email!);
+        if (profile) {
+          setCurrentUser(profile);
+        } else {
+          setCurrentUser(null);
+        }
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const loginUser = async (emailOrPhone: string, password?: string): Promise<boolean> => {
-    const users = await databaseService.getUsers();
-    const foundUser = users.find(u => 
-      (u.email.toLowerCase() === emailOrPhone.toLowerCase() || u.phone === emailOrPhone) &&
-      (!password || u.password === password)
-    );
-    
-    if (foundUser) {
-      setCurrentUser(foundUser);
-      localStorage.setItem('md_current_user_v1', JSON.stringify(foundUser));
-      return true;
+    if (!password) {
+      throw new Error("Password is required for login.");
+    }
+
+    const key = `md_lockout_${emailOrPhone.toLowerCase()}`;
+    const stored = localStorage.getItem(key);
+    let record = stored ? JSON.parse(stored) : { attempts: 0, lockoutUntil: null };
+
+    if (record.lockoutUntil && Date.now() < record.lockoutUntil) {
+      const remainingMinutes = Math.ceil((record.lockoutUntil - Date.now()) / 60000);
+      throw new Error(`This account is locked out due to multiple failed login attempts. Please try again in ${remainingMinutes} minutes.`);
+    }
+
+    const isEmail = emailOrPhone.includes('@');
+
+    if (!isSupabaseConfigured) {
+      throw new Error("Authentication requires Supabase configuration.");
+    }
+
+    const { error } = isEmail
+      ? await supabase.auth.signInWithPassword({ email: emailOrPhone, password })
+      : await supabase.auth.signInWithPassword({ phone: emailOrPhone, password } as any);
+      
+    if (!error) {
+      // Reset lockout attempts on successful login
+      localStorage.removeItem(key);
+      
+      let targetEmail = isEmail ? emailOrPhone : '';
+      if (!isEmail) {
+        const profile = await databaseService.getUserByPhone(emailOrPhone);
+        if (profile) targetEmail = profile.email;
+      }
+      
+      if (targetEmail) {
+        const profile = await databaseService.getUserByEmail(targetEmail);
+        if (profile) {
+          setCurrentUser(profile);
+          return true;
+        }
+      }
+    } else {
+      record.attempts += 1;
+      if (record.attempts >= 5) {
+        record.lockoutUntil = Date.now() + 15 * 60 * 1000; // 15 mins lockout
+      }
+      localStorage.setItem(key, JSON.stringify(record));
+      throw new Error(error.message);
     }
     return false;
   };
 
-  const registerUser = async (profile: UserProfile): Promise<boolean> => {
-    const success = await databaseService.registerUser(profile);
-    if (success) {
+  const registerUser = async (profile: UserProfile, password?: string): Promise<{ success: boolean; needsVerification?: boolean; message?: string }> => {
+    if (isSupabaseConfigured && profile.email) {
+      // 1. Create Supabase Auth user
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: profile.email,
+        password: password || crypto.randomUUID(), // random password if none provided
+        options: {
+          data: { name: profile.name }
+        }
+      });
+      if (authError) {
+        return { success: false, message: authError.message };
+      }
+
+      // Check if email confirmation is required and session is null
+      const needsVerification = data.session === null;
+
+      // 2. Save profile to registered_users table (without password)
+      const profileSaved = await databaseService.registerUserProfile(profile);
+      if (!profileSaved) {
+        return { success: false, message: "Failed to store customer profile." };
+      }
+
+      if (needsVerification) {
+        return { 
+          success: true, 
+          needsVerification: true, 
+          message: "A verification email has been sent. Please confirm your email before logging in." 
+        };
+      }
+
       setCurrentUser(profile);
       localStorage.setItem('md_current_user_v1', JSON.stringify(profile));
-      return true;
+      return { success: true };
     }
-    return false;
+
+    // Fallback without Supabase Auth
+    const profileSaved = await databaseService.registerUserProfile(profile);
+    if (profileSaved) {
+      setCurrentUser(profile);
+      localStorage.setItem('md_current_user_v1', JSON.stringify(profile));
+      return { success: true };
+    }
+    return { success: false, message: "Registration failed." };
   };
 
-  const logoutUser = () => {
+  const logoutUser = async () => {
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut();
+    }
     setCurrentUser(null);
     localStorage.removeItem('md_current_user_v1');
+  };
+
+  const resetPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
+    if (!isSupabaseConfigured) {
+      return { success: false, message: 'Password reset is not available in demo mode.' };
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/account'
+    });
+    if (error) {
+      return { success: false, message: error.message || 'Failed to send reset email.' };
+    }
+    return { success: true, message: 'Password reset link sent to your email.' };
+  };
+
+  const cancelOrder = async (orderId: string): Promise<boolean> => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return false;
+    if (order.status !== 'Pending' && order.status !== 'Confirmed') return false;
+    if (currentUser && order.customerEmail !== currentUser.email && order.customerPhone !== currentUser.phone) {
+      return false;
+    }
+    await databaseService.updateOrderStatus(orderId, 'Cancelled');
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'Cancelled' as const } : o));
+    return true;
   };
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -201,18 +359,97 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     await refreshProducts();
   };
 
+  const refreshSiteSettings = async () => {
+    const data = await databaseService.getSiteSettings();
+    setSiteSettings(data);
+  };
+
+  const saveSiteSettings = async (settings: SiteSettings) => {
+    await databaseService.saveSiteSettings(settings);
+    await refreshSiteSettings();
+  };
+
+  const refreshCoupons = async () => {
+    const data = await databaseService.getCoupons();
+    setCoupons(data);
+    // Seed default coupons if none exist
+    if (data.length === 0) {
+      const defaults: Coupon[] = [
+        { code: 'FREE1000', type: 'fixed', value: 99, minOrder: 1000, active: true, description: 'FREE Express Delivery on orders above ₹1,000' },
+        { code: 'LOYALGIFT', type: 'fixed', value: 149, minOrder: 500, active: true, description: 'Complimentary luxury surprise gift on your first order' },
+      ];
+      for (const d of defaults) {
+        await databaseService.saveCoupon(d);
+      }
+      const seeded = await databaseService.getCoupons();
+      setCoupons(seeded);
+    }
+  };
+
+  const saveCoupon = async (coupon: Coupon) => {
+    await databaseService.saveCoupon(coupon);
+    await refreshCoupons();
+  };
+
+  const deleteCoupon = async (code: string) => {
+    await databaseService.deleteCoupon(code);
+    await refreshCoupons();
+  };
+
+  const refreshMedia = async () => {
+    const data = await databaseService.getMedia();
+    setMediaItems(data);
+  };
+
+  const addMedia = async (url: string, name: string) => {
+    await databaseService.addMedia(url, name);
+    await refreshMedia();
+  };
+
+  const deleteMedia = async (id: string) => {
+    await databaseService.deleteMedia(id);
+    await refreshMedia();
+  };
+
+  const refreshEmailLogs = async () => {
+    const data = await databaseService.getEmailLogs();
+    setEmailLogs(data);
+  };
+
+  const triggerEmailNotification = async (recipientEmail: string, subject: string, body: string) => {
+    await databaseService.logEmailNotification(recipientEmail, subject, body, 'sent');
+    await refreshEmailLogs();
+  };
+
+  const replyToReview = async (reviewId: string, replyComment: string) => {
+    await databaseService.replyToReview(reviewId, replyComment);
+    await refreshProducts();
+  };
+
   useEffect(() => {
     refreshProducts();
     refreshOrders();
     refreshInquiries();
     refreshCategories();
+    refreshSiteSettings();
+    refreshCoupons();
+    refreshMedia();
+    refreshEmailLogs();
     
     // Load cart/wishlist from localStorage
-    const savedCart = localStorage.getItem('md_cart');
-    if (savedCart) setCart(JSON.parse(savedCart));
+    try {
+      const savedCart = localStorage.getItem('md_cart');
+      if (savedCart) setCart(JSON.parse(savedCart));
+    } catch {
+      setCart([]);
+    }
     
-    const savedWish = localStorage.getItem('md_wishlist');
-    if (savedWish) setWishlist(JSON.parse(savedWish));
+    try {
+      const savedWish = localStorage.getItem('md_wishlist');
+      if (savedWish) setWishlist(JSON.parse(savedWish));
+    } catch {
+      setWishlist([]);
+    }
   }, []);
 
   // Save cart/wishlist to localStorage on changes
@@ -229,12 +466,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Create unique key based on item details
     const key = `${itemData.product.id}-${itemData.selectedMetal.replace(/\s+/g, '')}-${itemData.selectedStone.replace(/\s+/g, '')}-${itemData.customEngraving || ''}`;
     
+    const product = products.find(p => p.id === itemData.product.id);
+    const availableStock = product?.stock ?? 999;
+    
     setCart(prevCart => {
       const existingIndex = prevCart.findIndex(item => item.key === key);
       if (existingIndex > -1) {
+        const currentQty = prevCart[existingIndex].quantity;
+        const newQty = currentQty + itemData.quantity;
+        if (newQty > availableStock) {
+          alert(`Cannot add more of this item. Only ${availableStock} left in stock.`);
+          const updated = [...prevCart];
+          updated[existingIndex].quantity = availableStock;
+          return updated;
+        }
         const updated = [...prevCart];
-        updated[existingIndex].quantity += itemData.quantity;
+        updated[existingIndex].quantity = newQty;
         return updated;
+      }
+      if (itemData.quantity > availableStock) {
+        alert(`Cannot add this item. Only ${availableStock} left in stock.`);
+        return prevCart;
       }
       return [...prevCart, { ...itemData, key }];
     });
@@ -249,6 +501,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       removeFromCart(key);
       return;
     }
+    const item = cart.find(i => i.key === key);
+    if (!item) return;
+    const product = products.find(p => p.id === item.product.id);
+    const availableStock = product?.stock ?? 999;
+    
+    if (qty > availableStock) {
+      alert(`Only ${availableStock} items are available in stock.`);
+      qty = availableStock;
+    }
+    
     setCart(prevCart =>
       prevCart.map(item => (item.key === key ? { ...item, quantity: qty } : item))
     );
@@ -269,7 +531,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Email service helper via Resend Vercel Serverless Function
-  const sendEmailViaResend = async (type: 'order' | 'feedback' | 'review', payload: any) => {
+  const sendEmailViaResend = async (type: 'order' | 'feedback' | 'review' | 'delivery_update', payload: any) => {
     try {
       const response = await fetch('/api/send-email', {
         method: 'POST',
@@ -279,9 +541,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (!response.ok) {
         throw new Error(`Email server response failed with code: ${response.status}`);
       }
-      console.log(`Resend: Successfully dispatched ${type} email.`);
     } catch (err) {
-      console.warn("Resend email request simulation (Local Dev Mode):", { type, payload }, err);
     }
   };
 
@@ -289,8 +549,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const placeOrder = async (
     shipping: Parameters<StoreContextType['placeOrder']>[0],
     paymentMethod: 'COD' | 'Online',
-    paymentStatus: 'Pending' | 'Paid'
+    paymentStatus: 'Pending' | 'Paid',
+    txnid?: string
   ) => {
+    const { appliedCouponCode, ...shippingAddress } = shipping;
+
     const items: OrderItem[] = cart.map(c => ({
       product: {
         id: c.product.id,
@@ -307,25 +570,65 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       customDetails: c.customDetails
     }));
 
-    const totalAmount = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0) + shipping.shippingCost;
+    let discountAmount = 0;
+    const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
 
-    const newOrder = await databaseService.placeOrder({
-      ...shipping,
-      paymentMethod,
-      paymentStatus,
-      items,
-      totalAmount,
-      status: 'Pending'
-    });
+    if (appliedCouponCode) {
+      const coupon = await databaseService.getCouponByCode(appliedCouponCode);
+      if (!coupon || !coupon.active || subtotal < coupon.minOrder) {
+        throw new Error('Invalid or expired coupon code.');
+      }
+      if (coupon.type === 'percent') {
+        discountAmount = Math.round(subtotal * (coupon.value / 100));
+      } else {
+        discountAmount = Math.min(coupon.value, subtotal);
+      }
+    } else if (subtotal > 999) {
+      discountAmount = Math.round(subtotal * 0.1);
+    }
 
-    clearCart();
-    await refreshOrders();
-    setTriggerGemRain(true); // Fire diamond shower!
+    const totalAmount = subtotal - discountAmount + shipping.shippingCost;
 
-    // Dispatch order receipt/alert emails via Resend
-    await sendEmailViaResend('order', { order: newOrder });
+    // Validate stock availability before creating order
+    for (const item of cart) {
+      const product = products.find(p => p.id === item.product.id);
+      if (product && product.stock !== undefined && product.stock < item.quantity) {
+        throw new Error(`Sorry, "${product.name}" only has ${product.stock} items left in stock.`);
+      }
+    }
 
-    return newOrder;
+    try {
+      const newOrder = await databaseService.placeOrder({
+        ...shippingAddress,
+        paymentMethod,
+        paymentStatus,
+        items,
+        totalAmount,
+        status: 'Pending',
+        txnid
+      });
+
+      clearCart();
+      await refreshOrders();
+      setTriggerGemRain(true); // Fire diamond shower!
+
+      // Stock decrement is handled automatically via database trigger on order insert
+      await refreshProducts();
+
+      // Dispatch order receipt/alert emails via Resend
+      await sendEmailViaResend('order', { order: newOrder });
+
+      return newOrder;
+    } catch (error: any) {
+      if (txnid && (error?.code === '23505' || error?.message?.includes('unique constraint') || error?.message?.includes('23505'))) {
+        console.warn("Order with txnid already exists, returning existing order.");
+        const existingOrder = await databaseService.getOrderByTxnid(txnid);
+        if (existingOrder) {
+          return existingOrder;
+        }
+      }
+      throw error;
+    }
   };
 
   // Inquiries
@@ -401,6 +704,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       currentUser,
       loginUser,
       registerUser,
+      resetPassword,
+      cancelOrder,
       logoutUser,
       getProductReviews,
       submitProductReview,
@@ -409,7 +714,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       addCategory,
       deleteCategory,
       refreshCategories,
-      resetAndSeedProducts
+      resetAndSeedProducts,
+      siteSettings,
+      refreshSiteSettings,
+      saveSiteSettings,
+      coupons,
+      refreshCoupons,
+      saveCoupon,
+      deleteCoupon,
+      mediaItems,
+      refreshMedia,
+      addMedia,
+      deleteMedia,
+      emailLogs,
+      refreshEmailLogs,
+      triggerEmailNotification,
+      replyToReview
     }}>
       {children}
     </StoreContext.Provider>

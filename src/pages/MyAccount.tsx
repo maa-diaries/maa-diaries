@@ -1,26 +1,32 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { User, ShoppingBag, ArrowRight, MapPin, Heart, PackageCheck, ChevronRight, ShieldCheck, LogOut, XCircle, Gift, Trash2 } from 'lucide-react';
 
 export const MyAccount: React.FC = () => {
+  const navigate = useNavigate();
   const { 
     orders, 
-    setActivePage, 
     setSelectedOrderId, 
     currentUser, 
     loginUser, 
     registerUser, 
+    resetPassword,
     logoutUser,
     wishlist,
     toggleWishlist,
     products,
-    setSelectedProductId
   } = useStore();
 
   const [activeSection, setActiveSection] = useState<'orders'|'wishlist'|'address'|'refer'>('orders');
 
   const [isRegister, setIsRegister] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const [showResetInput, setShowResetInput] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
 
   // Form states - Login
   const [loginEmail, setLoginEmail] = useState('');
@@ -39,27 +45,35 @@ export const MyAccount: React.FC = () => {
   // Handle direct tracking click
   const handleTrackOrderClick = (orderId: string) => {
     setSelectedOrderId(orderId);
-    setActivePage('orders');
+    navigate('/orders');
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setSuccessMessage(null);
     if (!loginEmail || !loginPassword) {
       setError("Please fill in all fields.");
       return;
     }
-    const success = loginUser(loginEmail, loginPassword);
-    if (!success) {
-      setError("Invalid Email/Phone or Password. Try registering first!");
-    } else {
-      setError(null);
-      setLoginEmail('');
-      setLoginPassword('');
+    try {
+      const success = await loginUser(loginEmail, loginPassword);
+      if (!success) {
+        setError("Invalid Email/Phone or Password. Try registering first!");
+      } else {
+        setError(null);
+        setLoginEmail('');
+        setLoginPassword('');
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to log in.");
     }
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setSuccessMessage(null);
     if (!regName || !regEmail || !regPhone || !regPassword || !regAddress || !regCity || !regState || !regPincode) {
       setError("All fields are required to register.");
       return;
@@ -73,31 +87,65 @@ export const MyAccount: React.FC = () => {
       return;
     }
 
-    const success = registerUser({
-      name: regName,
-      email: regEmail,
-      phone: regPhone,
-      addressLine: regAddress,
-      city: regCity,
-      state: regState,
-      pincode: regPincode,
-      password: regPassword
-    });
-
-    if (!success) {
-      setError("Email or Phone number is already registered.");
-    } else {
-      setError(null);
-      // Reset registration form
-      setRegName('');
-      setRegEmail('');
-      setRegPhone('');
-      setRegPassword('');
-      setRegAddress('');
-      setRegCity('');
-      setRegState('');
-      setRegPincode('');
+    // Password complexity check
+    const minLength = 8;
+    const hasUppercase = /[A-Z]/.test(regPassword);
+    const hasLowercase = /[a-z]/.test(regPassword);
+    const hasDigit = /\d/.test(regPassword);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(regPassword);
+    
+    if (regPassword.length < minLength || !hasUppercase || !hasLowercase || !hasDigit || !hasSpecial) {
+      setError("Password must be at least 8 characters long and include: one uppercase letter, one lowercase letter, one number, and one special character.");
+      return;
     }
+
+    try {
+      const result = await registerUser({
+        name: regName,
+        email: regEmail,
+        phone: regPhone,
+        addressLine: regAddress,
+        city: regCity,
+        state: regState,
+        pincode: regPincode
+      }, regPassword);
+
+      if (!result.success) {
+        setError(result.message || "Email or Phone number is already registered.");
+      } else {
+        setError(null);
+        if (result.needsVerification) {
+          setSuccessMessage(result.message || "Registration successful! Please verify your email before logging in.");
+        } else {
+          setSuccessMessage("Registration successful! Welcome to Maa Diaries.");
+        }
+        // Reset registration form
+        setRegName('');
+        setRegEmail('');
+        setRegPhone('');
+        setRegPassword('');
+        setRegAddress('');
+        setRegCity('');
+        setRegState('');
+        setRegPincode('');
+      }
+    } catch (err: any) {
+      setError(err?.message || "Registration failed.");
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!resetEmail || !resetEmail.includes('@')) {
+      setResetMessage(null);
+      setError('Please enter a valid email address.');
+      return;
+    }
+    setResetLoading(true);
+    setError(null);
+    const result = await resetPassword(resetEmail);
+    setResetMessage(result.message);
+    if (!result.success) setError(result.message);
+    setResetLoading(false);
   };
 
   // Filter orders for the logged-in user
@@ -138,7 +186,7 @@ export const MyAccount: React.FC = () => {
 
           {/* Error Message */}
           {error && (
-            <div style={{
+            <div role="alert" style={{
               width: '100%',
               padding: '10px 14px',
               borderRadius: '6px',
@@ -150,6 +198,24 @@ export const MyAccount: React.FC = () => {
               lineHeight: 1.4
             }}>
               {error}
+            </div>
+          )}
+
+          {/* Success Message */}
+          {successMessage && (
+            <div role="status" style={{
+              width: '100%',
+              padding: '10px 14px',
+              borderRadius: '6px',
+              backgroundColor: 'rgba(46, 204, 113, 0.08)',
+              border: '1px solid rgba(46, 204, 113, 0.2)',
+              color: '#27ae60',
+              fontSize: '0.8rem',
+              marginBottom: '20px',
+              lineHeight: 1.4,
+              fontWeight: 500
+            }}>
+              {successMessage}
             </div>
           )}
 
@@ -202,6 +268,9 @@ export const MyAccount: React.FC = () => {
                   placeholder="Create password" 
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
+                  minLength={8}
+                  pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?&quot;:{}|<>]).{8,}"
+                  title="Min 8 chars with uppercase, lowercase, number, and special character"
                   style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
                 />
               </div>
@@ -283,6 +352,37 @@ export const MyAccount: React.FC = () => {
                   onChange={(e) => setLoginPassword(e.target.value)}
                   style={{ width: '100%', height: '42px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
                 />
+                <button
+                  type="button"
+                  onClick={() => { setShowResetInput(!showResetInput); setResetMessage(null); setError(null); }}
+                  style={{ background: 'none', border: 'none', color: 'var(--gold-primary)', fontSize: '0.78rem', cursor: 'pointer', textAlign: 'left', padding: 0, marginTop: '6px' }}
+                >
+                  Forgot Password?
+                </button>
+                {showResetInput && (
+                  <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                    <input
+                      type="email"
+                      className="search-input"
+                      placeholder="Enter your email"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      style={{ flex: 1, height: '36px', padding: '0 10px', fontSize: '0.82rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      disabled={resetLoading}
+                      className="gold-button"
+                      style={{ padding: '0 14px', height: '36px', fontSize: '0.78rem', cursor: resetLoading ? 'wait' : 'pointer' }}
+                    >
+                      {resetLoading ? '...' : 'Send Link'}
+                    </button>
+                  </div>
+                )}
+                {resetMessage && (
+                  <p style={{ color: '#2ecc71', fontSize: '0.78rem', marginTop: '6px' }}>{resetMessage}</p>
+                )}
               </div>
 
               <button type="submit" className="gold-button" style={{ width: '100%', height: '44px', marginTop: '8px' }}>
@@ -351,7 +451,7 @@ export const MyAccount: React.FC = () => {
           </div>
         </div>
         <div>
-          <button onClick={() => setActivePage('shop')} className="gold-button" style={{ padding: '10px 24px' }}>
+          <button onClick={() => navigate('/shop')} className="gold-button" style={{ padding: '10px 24px' }}>
             Browse Collections
           </button>
         </div>
@@ -362,7 +462,7 @@ export const MyAccount: React.FC = () => {
         <div className="account-stat glass"><ShoppingBag size={20} /><div><strong>{userOrders.length}</strong><span>Total Orders</span></div></div>
         <div className="account-stat glass"><PackageCheck size={20} /><div><strong>{userOrders.filter(order => order.status === 'Delivered').length}</strong><span>Delivered</span></div></div>
         <div className="account-stat glass" style={{ borderLeft: '3px solid #e74c3c' }}><XCircle size={20} style={{ color: '#e74c3c' }} /><div><strong style={{ color: '#e74c3c' }}>{userOrders.filter(order => order.status === 'Cancelled').length}</strong><span>Cancelled</span></div></div>
-        <div className="account-stat glass"><Heart size={20} /><div><strong>0</strong><span>Saved Pieces</span></div></div>
+        <div className="account-stat glass"><Heart size={20} /><div><strong>{wishlist.length}</strong><span>Saved Pieces</span></div></div>
       </div>
 
       {/* Quick Actions */}
@@ -452,7 +552,7 @@ export const MyAccount: React.FC = () => {
                 <ShoppingBag size={40} style={{ color: 'var(--text-muted)', marginBottom: '16px' }} />
                 <h3 style={{ fontWeight: 400, marginBottom: '8px' }}>No orders yet</h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: '20px' }}>Start exploring our premium jewelry collections.</p>
-                <button onClick={() => setActivePage('shop')} className="gold-button" style={{ padding: '10px 28px' }}>Start Shopping</button>
+                <button onClick={() => navigate('/shop')} className="gold-button" style={{ padding: '10px 28px' }}>Start Shopping</button>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
@@ -486,7 +586,7 @@ export const MyAccount: React.FC = () => {
                 <Heart size={40} style={{ color: 'var(--text-muted)', marginBottom: '16px' }} />
                 <h3 style={{ fontWeight: 400, marginBottom: '8px' }}>Your wishlist is empty</h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: '20px' }}>Heart products you love to save them here.</p>
-                <button onClick={() => setActivePage('shop')} className="gold-button" style={{ padding: '10px 28px' }}>Browse Collection</button>
+                <button onClick={() => navigate('/shop')} className="gold-button" style={{ padding: '10px 28px' }}>Browse Collection</button>
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '18px' }}>
@@ -495,12 +595,12 @@ export const MyAccount: React.FC = () => {
                   if (!prod) return null;
                   return (
                     <div key={pid} style={{ border: '1px solid var(--border-light)', borderRadius: '8px', overflow: 'hidden', background: 'var(--bg-secondary)' }}>
-                      <div onClick={() => { setSelectedProductId(prod.id); setActivePage('product-details'); }} style={{ height: '160px', backgroundImage: `url(${prod.image})`, backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'pointer' }} />
+                      <div onClick={() => { navigate('/product/' + prod.id); }} style={{ height: '160px', backgroundImage: `url(${prod.image})`, backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'pointer' }} />
                       <div style={{ padding: '12px' }}>
                         <p style={{ fontSize: '0.82rem', fontWeight: 500, margin: '0 0 4px 0', color: 'var(--text-primary)', lineHeight: 1.3 }}>{prod.name}</p>
-                        <p style={{ fontSize: '0.9rem', color: 'var(--gold-primary)', fontWeight: 700, margin: '0 0 10px 0' }}>₹{prod.price.toLocaleString('en-IN')}</p>
+                        <p style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1rem', color: 'var(--gold-primary)', fontWeight: 400, margin: '0 0 10px 0' }}>₹{prod.price.toLocaleString('en-IN')}</p>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          <button onClick={() => { setSelectedProductId(prod.id); setActivePage('product-details'); }} style={{ flex: 1, padding: '6px', fontSize: '0.72rem', fontWeight: 600, background: 'var(--gold-primary)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>View</button>
+                          <button onClick={() => { navigate('/product/' + prod.id); }} style={{ flex: 1, padding: '6px', fontSize: '0.72rem', fontWeight: 600, background: 'var(--gold-primary)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>View</button>
                           <button onClick={() => toggleWishlist(pid)} style={{ padding: '6px 10px', background: 'none', border: '1px solid var(--border-light)', borderRadius: '4px', cursor: 'pointer', color: '#e74c3c' }}><Trash2 size={13} /></button>
                         </div>
                       </div>

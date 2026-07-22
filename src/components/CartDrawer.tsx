@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useStore } from '../context/StoreContext';
 import { X, Trash2, Plus, Minus, ArrowRight, Tag } from 'lucide-react';
-import { couponsService } from '../services/coupons';
 
 export const CartDrawer: React.FC = () => {
   const { 
@@ -10,32 +9,86 @@ export const CartDrawer: React.FC = () => {
     setCartOpen, 
     updateCartQuantity, 
     removeFromCart, 
-    setCheckoutOpen 
+    setCheckoutOpen,
+    coupons
   } = useStore();
 
   const [couponCode, setCouponCode] = useState('');
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [appliedCouponLabel, setAppliedCouponLabel] = useState('');
   const [couponError, setCouponError] = useState('');
   const [couponSuccess, setCouponSuccess] = useState('');
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setCartOpen(false);
+      return;
+    }
+    if (e.key !== 'Tab') return;
+    const drawer = drawerRef.current;
+    if (!drawer) return;
+    const focusable = drawer.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+      if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }, [setCartOpen]);
+
+  useEffect(() => {
+    if (cartOpen) {
+      closeBtnRef.current?.focus();
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [cartOpen, handleKeyDown]);
 
   if (!cartOpen) return null;
-
-  const handleApplyCoupon = (e: React.FormEvent) => {
-    e.preventDefault();
-    const coupon = couponsService.validate(couponCode, subtotal);
-    if (coupon) {
-      setDiscountPercent(coupon.type === 'percent' ? coupon.value : Math.round((coupon.value / Math.max(subtotal, 1)) * 100));
-      setCouponSuccess('Offer applied successfully!');
-      setCouponError('');
-    } else {
-      setCouponError('Invalid VIP Code');
-      setCouponSuccess('');
-    }
-  };
 
   const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   const discountAmount = Math.round((subtotal * discountPercent) / 100);
   const total = subtotal - discountAmount;
+
+  const handleApplyCoupon = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = couponCode.trim().toUpperCase();
+    if (!code) return;
+    const found = coupons.find(c => c.code.toUpperCase() === code);
+    if (!found) {
+      setCouponError('Invalid coupon code. Please check and try again.');
+      setCouponSuccess('');
+      setDiscountPercent(0);
+      setAppliedCouponLabel('');
+      return;
+    }
+    if (!found.active) {
+      setCouponError('This coupon is no longer active.');
+      setCouponSuccess('');
+      setDiscountPercent(0);
+      setAppliedCouponLabel('');
+      return;
+    }
+    if (subtotal < found.minOrder) {
+      setCouponError(`Minimum order of ₹${found.minOrder.toLocaleString('en-IN')} required. Add ₹${(found.minOrder - subtotal).toLocaleString('en-IN')} more to use "${found.code}".`);
+      setCouponSuccess('');
+      setDiscountPercent(0);
+      setAppliedCouponLabel('');
+      return;
+    }
+    const pct = found.type === 'percent' ? found.value : Math.round((found.value / Math.max(subtotal, 1)) * 100);
+    const label = found.type === 'percent'
+      ? `Coupon ${found.code} (${found.value}% off)`
+      : `Coupon ${found.code} (₹${found.value} off)`;
+    setDiscountPercent(pct);
+    setAppliedCouponLabel(label);
+    setCouponSuccess(`${found.code} applied — you save ${found.type === 'percent' ? found.value + '%' : '₹' + found.value}!`);
+    setCouponError('');
+  };
 
   const handleCheckoutClick = () => {
     setCartOpen(false);
@@ -63,7 +116,7 @@ export const CartDrawer: React.FC = () => {
       />
 
       {/* Drawer Content */}
-      <div className="glass" style={{
+      <div ref={drawerRef} className="glass" style={{
         position: 'relative',
         width: '100%',
         maxWidth: '460px',
@@ -98,6 +151,8 @@ export const CartDrawer: React.FC = () => {
             Your Cart <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>({cart.length} items)</span>
           </h3>
           <button 
+            ref={closeBtnRef}
+            aria-label="Close cart"
             onClick={() => setCartOpen(false)}
             style={{ cursor: 'pointer', color: 'var(--text-primary)', padding: '4px' }}
           >
@@ -158,6 +213,7 @@ export const CartDrawer: React.FC = () => {
                   <img 
                     src={item.product.image} 
                     alt={item.product.name} 
+                    loading="lazy"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     onError={(e) => {
                       // Fallback for custom rings or broken paths
@@ -170,7 +226,7 @@ export const CartDrawer: React.FC = () => {
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <h4 style={{ fontSize: '0.95rem', fontWeight: 500 }}>{item.product.name}</h4>
-                    <span style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--gold-primary)' }}>
+                    <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.05rem', fontWeight: 400, color: 'var(--gold-primary)' }}>
                       ₹{item.product.price.toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -199,6 +255,7 @@ export const CartDrawer: React.FC = () => {
                       borderRadius: '2px'
                     }}>
                       <button 
+                        aria-label="Decrease quantity"
                         onClick={() => updateCartQuantity(item.key, item.quantity - 1)}
                         style={{ cursor: 'pointer', padding: '6px', color: 'var(--text-secondary)' }}
                       >
@@ -208,6 +265,7 @@ export const CartDrawer: React.FC = () => {
                         {item.quantity}
                       </span>
                       <button 
+                        aria-label="Increase quantity"
                         onClick={() => updateCartQuantity(item.key, item.quantity + 1)}
                         style={{ cursor: 'pointer', padding: '6px', color: 'var(--text-secondary)' }}
                       >
@@ -216,6 +274,7 @@ export const CartDrawer: React.FC = () => {
                     </div>
 
                     <button 
+                      aria-label="Remove item from cart"
                       onClick={() => removeFromCart(item.key)}
                       style={{ cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: '4px' }}
                       className="remove-btn"
@@ -256,7 +315,8 @@ export const CartDrawer: React.FC = () => {
                 <Tag size={14} style={{ color: 'var(--text-muted)' }} />
                 <input
                   type="text"
-                  placeholder="VIP promo code (AURA10)"
+                  aria-label="Enter VIP promo code"
+                  placeholder="VIP promo code (MAADIARIES10)"
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value)}
                   style={{
@@ -294,7 +354,7 @@ export const CartDrawer: React.FC = () => {
               </div>
               {discountPercent > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#2ecc71' }}>
-                  <span>VIP Discount (10%)</span>
+                  <span>{appliedCouponLabel || 'VIP Discount'}</span>
                   <span>- ₹{discountAmount.toLocaleString('en-IN')}</span>
                 </div>
               )}

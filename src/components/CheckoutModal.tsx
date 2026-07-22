@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { X, CreditCard, Shield, MapPin, Truck, CheckCircle, Download, Smartphone } from 'lucide-react';
+import { databaseService } from '../services/database';
 
 type Step = 'shipping' | 'payment-select' | 'payu-gateway' | 'success';
 type PaymentMethod = 'COD' | 'Online';
@@ -14,7 +15,8 @@ export const CheckoutModal: React.FC = () => {
     placeOrder,
     currentUser,
     loginUser,
-    registerUser
+    registerUser,
+    siteSettings
   } = useStore();
 
   const [step, setStep] = useState<Step>('shipping');
@@ -67,15 +69,15 @@ export const CheckoutModal: React.FC = () => {
 
   // Check for PayU URL callbacks on mount
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const paymentStatus = params.get('payment_status');
-    const txnid = params.get('txnid');
-
+    // Parse parameters from both query string and hash fragment (H7)
+    const hashParams = new URLSearchParams(window.location.hash.startsWith('#') ? window.location.hash.substring(1) : window.location.hash);
+    const searchParams = new URLSearchParams(window.location.search);
+    const paymentStatus = hashParams.get('payment_status') || searchParams.get('payment_status');
+    const txnidParam = hashParams.get('txnid') || searchParams.get('txnid');
+    
     if (paymentStatus) {
-      console.log(`PayU callback received. Status: ${paymentStatus}, Transaction ID: ${txnid}`);
-      // Clear URL parameters immediately
-      const cleanUrl = window.location.pathname + window.location.hash;
-      window.history.replaceState({}, document.title, cleanUrl);
+      // Clear all URL parameters and hash fragments immediately to avoid leakage
+      window.history.replaceState({}, document.title, window.location.pathname);
 
       const pendingOrderStr = localStorage.getItem('md_pending_payu_order');
       if (pendingOrderStr) {
@@ -89,25 +91,37 @@ export const CheckoutModal: React.FC = () => {
         setState(draft.state || '');
         setPincode(draft.pincode || '');
 
+        const targetTxnid = txnidParam || draft.txnid;
+
         if (paymentStatus === 'success') {
           setProcessing(true);
           setCheckoutOpen(true);
           
-          // Place the order
-          placeOrder({
-            customerName: draft.name,
-            customerEmail: draft.email,
-            customerPhone: draft.phone,
-            addressLine: draft.address,
-            city: draft.city,
-            state: draft.state,
-            pincode: draft.pincode,
-            estimatedDelivery: 'within 15 days from ordered date',
-            courierPartner: 'Normal Delivery',
-            shippingCost: draft.shippingCost
-          }, 'Online', 'Paid').then((placedOrder) => {
-            setPlacedOrderDetails(placedOrder);
-            setStep('success');
+          databaseService.getOrderByTxnid(targetTxnid).then(async (existingOrder) => {
+            if (existingOrder) {
+              if (existingOrder.paymentStatus !== 'Paid') {
+                await databaseService.updateOrderPaymentStatus(existingOrder.id, 'Paid');
+                existingOrder.paymentStatus = 'Paid';
+              }
+              setPlacedOrderDetails(existingOrder);
+              setStep('success');
+            } else {
+               const order = await placeOrder({
+                 customerName: draft.name,
+                 customerEmail: draft.email,
+                 customerPhone: draft.phone,
+                 addressLine: draft.address,
+                 city: draft.city,
+                 state: draft.state,
+                 pincode: draft.pincode,
+                 estimatedDelivery: 'within 15 days from ordered date',
+                 courierPartner: 'Normal Delivery',
+                 shippingCost: draft.shippingCost,
+                 appliedCouponCode: draft.appliedCouponCode
+               }, 'Online', 'Paid', targetTxnid);
+              setPlacedOrderDetails(order);
+              setStep('success');
+            }
             setProcessing(false);
             localStorage.removeItem('md_pending_payu_order');
           }).catch((err) => {
@@ -135,6 +149,7 @@ export const CheckoutModal: React.FC = () => {
   
   const [processing, setProcessing] = useState(false);
   const [payuError, setPayuError] = useState('');
+  const [pendingOrderObj, setPendingOrderObj] = useState<any>(null);
   const [placedOrderDetails, setPlacedOrderDetails] = useState<any>(null);
 
   const [authTab, setAuthTab] = useState<'register' | 'login'>('register');
@@ -143,18 +158,107 @@ export const CheckoutModal: React.FC = () => {
   const [regPassword, setRegPassword] = useState('');
   const [authError, setAuthError] = useState('');
 
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponError, setCouponError] = useState('');
+
+  // Clear coupon state when checkout opens/closes
+  useEffect(() => {
+    if (checkoutOpen) {
+      setCouponInput('');
+      setAppliedCoupon(null);
+      setCouponError('');
+    }
+  }, [checkoutOpen]);
+
+  const handleApplyCoupon = async () => {
+    setCouponError('');
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    try {
+      const found = await databaseService.getCouponByCode(code);
+      if (!found) {
+        setCouponError('Invalid coupon code.');
+        setAppliedCoupon(null);
+        return;
+      }
+      if (!found.active) {
+        setCouponError('This coupon is no longer active.');
+        setAppliedCoupon(null);
+        return;
+      }
+      if (subtotal < found.minOrder) {
+        setCouponError(`Minimum order value of ₹${found.minOrder} is required for this coupon.`);
+        setAppliedCoupon(null);
+        return;
+      }
+      setAppliedCoupon(found);
+    } catch (err) {
+      console.error(err);
+      setCouponError('Error validating coupon. Please try again.');
+      setAppliedCoupon(null);
+    }
+  };
+
   // Calculate order totals
   const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   
   // Dynamic coupon check
-  const hasCoupon = subtotal > 999; 
-  const discountAmount = hasCoupon ? Math.round(subtotal * 0.1) : 0; // 10% off automatically for > ₹999 items
+  let discountAmount = 0;
+  let discountLabel = '';
+  if (appliedCoupon) {
+    if (appliedCoupon.type === 'percent') {
+      discountAmount = Math.round(subtotal * (appliedCoupon.value / 100));
+      discountLabel = `Coupon (${appliedCoupon.code} - ${appliedCoupon.value}%)`;
+    } else {
+      discountAmount = Math.min(appliedCoupon.value, subtotal);
+      discountLabel = `Coupon (${appliedCoupon.code} - ₹${appliedCoupon.value})`;
+    }
+  } else if (subtotal > 999) {
+    discountAmount = Math.round(subtotal * 0.1);
+    discountLabel = 'Auto Discount (10% off > ₹999)';
+  }
   const cartTotal = subtotal - discountAmount;
   
-  // Free delivery above 1000, otherwise flat standard fee of 99
-  const shippingCost = subtotal >= 1000 ? 0 : 99;
+  const shippingCost = subtotal >= siteSettings.freeShippingThreshold ? 0 : 99;
   const codFee = paymentMethod === 'COD' ? 50 : 0;
   const grandTotal = cartTotal + shippingCost + codFee;
+
+  // Validate coupon minOrder in response to subtotal changes
+  useEffect(() => {
+    if (appliedCoupon && subtotal < appliedCoupon.minOrder) {
+      setAppliedCoupon(null);
+      setCouponError(`Coupon removed: Minimum order value of ₹${appliedCoupon.minOrder} is required.`);
+    }
+  }, [subtotal, appliedCoupon]);
+
+  const diff = siteSettings.freeShippingThreshold - subtotal;
+  const isFree = diff <= 0;
+  const shippingThresholdBanner = (
+    <div style={{
+      padding: '10px 12px',
+      borderRadius: '6px',
+      fontSize: '0.8rem',
+      fontWeight: 500,
+      textAlign: 'center',
+      marginTop: '12px',
+      marginBottom: '8px',
+      border: isFree ? '1px dashed #2ecc71' : '1px dashed var(--gold-primary)',
+      background: isFree ? 'rgba(46, 204, 113, 0.08)' : 'var(--gold-light)',
+      color: isFree ? '#27ae60' : 'var(--gold-primary)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '8px',
+      transition: 'all 0.3s ease'
+    }}>
+      {isFree ? (
+        <span>🎉 Congratulations! Your order qualifies for <strong>FREE Shipping</strong>!</span>
+      ) : (
+        <span>Add <strong>₹{diff.toLocaleString('en-IN')}</strong> more to unlock <strong>FREE Shipping</strong>!</span>
+      )}
+    </div>
+  );
 
   // Simple pincode validation
   useEffect(() => {
@@ -182,20 +286,41 @@ export const CheckoutModal: React.FC = () => {
         setAuthError('Please choose a password to register your account');
         return;
       }
-      
-      const success = await registerUser({
-        name,
-        email,
-        phone,
-        addressLine: address,
-        city,
-        state,
-        pincode,
-        password: regPassword
-      });
 
-      if (!success) {
-        setAuthError('Registration failed. This email or phone might already be in use.');
+      // Password complexity check
+      const minLength = 8;
+      const hasUppercase = /[A-Z]/.test(regPassword);
+      const hasLowercase = /[a-z]/.test(regPassword);
+      const hasDigit = /\d/.test(regPassword);
+      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(regPassword);
+
+      if (regPassword.length < minLength || !hasUppercase || !hasLowercase || !hasDigit || !hasSpecial) {
+        setAuthError("Password must be at least 8 characters long and include: one uppercase letter, one lowercase letter, one number, and one special character.");
+        return;
+      }
+      
+      try {
+        const result = await registerUser({
+          name,
+          email,
+          phone,
+          addressLine: address,
+          city,
+          state,
+          pincode
+        }, regPassword);
+
+        if (!result.success) {
+          setAuthError(result.message || 'Registration failed. This email or phone might already be in use.');
+          return;
+        }
+
+        if (result.needsVerification) {
+          setAuthError(result.message || 'A verification email has been sent. Please confirm before completing checkout.');
+          return;
+        }
+      } catch (err: any) {
+        setAuthError(err?.message || 'Registration failed.');
         return;
       }
     }
@@ -210,9 +335,13 @@ export const CheckoutModal: React.FC = () => {
       setAuthError('Please fill in all fields.');
       return;
     }
-    const success = await loginUser(loginEmail, loginPassword);
-    if (!success) {
-      setAuthError('Invalid credentials. Please try again.');
+    try {
+      const success = await loginUser(loginEmail, loginPassword);
+      if (!success) {
+        setAuthError('Invalid credentials. Please try again.');
+      }
+    } catch (err: any) {
+      setAuthError(err?.message || 'Login failed.');
     }
   };
 
@@ -226,9 +355,27 @@ export const CheckoutModal: React.FC = () => {
     setPayuError('');
     setAuthError('');
     
-    const txnid = 'MD' + Date.now() + Math.floor(Math.random() * 1000);
+    // Generate secure collision-free txnid (H10)
+    const txnid = 'MD' + Date.now().toString(36) + Math.random().toString(36).substring(2, 10).toUpperCase();
     
     try {
+      // 1. Create a Pending order in the database first (C5/H4)
+      const pendingOrder = await placeOrder({
+        customerName: name,
+        customerEmail: email,
+        customerPhone: phone,
+        addressLine: address,
+        city,
+        state,
+        pincode,
+        estimatedDelivery: getDeliveryDateString(),
+        courierPartner: 'Normal Delivery',
+        shippingCost: shippingCost + codFee,
+        appliedCouponCode: appliedCoupon?.code
+      }, 'Online', 'Pending', txnid);
+      setPendingOrderObj(pendingOrder);
+
+      // 2. Fetch PayU hash
       const response = await fetch('/api/payu-hash', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -238,7 +385,8 @@ export const CheckoutModal: React.FC = () => {
           productinfo: cart.map(item => item.product.name).join(', ').substring(0, 100) || 'Maa Diaries Order',
           firstname: name,
           email,
-          phone
+          phone,
+          udf1: pendingOrder.id // Send database order ID
         })
       });
 
@@ -248,12 +396,18 @@ export const CheckoutModal: React.FC = () => {
 
       const resData = await response.json();
       
+      if (resData.isMock && import.meta.env.PROD) {
+        setPayuError('Online payment is not configured. Please use Cash on Delivery.');
+        setProcessing(false);
+        return;
+      }
+
       if (resData.isMock) {
         // Falling back to Interactive Simulation
         setProcessing(false);
         setStep('payu-gateway');
       } else {
-        // Setup pending order details in localStorage
+        // Setup pending order details in localStorage as fallback
         const orderDraft = {
           txnid,
           name,
@@ -265,7 +419,8 @@ export const CheckoutModal: React.FC = () => {
           pincode,
           shippingCost: shippingCost + codFee,
           cart,
-          paymentMethod
+          paymentMethod,
+          appliedCouponCode: appliedCoupon?.code
         };
         localStorage.setItem('md_pending_payu_order', JSON.stringify(orderDraft));
 
@@ -275,7 +430,7 @@ export const CheckoutModal: React.FC = () => {
         form.action = resData.action;
 
         const fields: Record<string, string> = {
-          key: resData.key,
+          key: resData.payuKey,
           txnid: resData.txnid,
           amount: resData.amount.toString(),
           productinfo: resData.productinfo,
@@ -284,7 +439,8 @@ export const CheckoutModal: React.FC = () => {
           phone: resData.phone,
           surl: resData.surl,
           furl: resData.furl,
-          hash: resData.hash
+          hash: resData.hash,
+          udf1: pendingOrder.id
         };
 
         for (const [fieldName, fieldValue] of Object.entries(fields)) {
@@ -301,6 +457,10 @@ export const CheckoutModal: React.FC = () => {
     } catch (err: any) {
       console.warn("PayU connection check failed, using simulated gateway:", err);
       setProcessing(false);
+      if (import.meta.env.PROD) {
+        setPayuError('Online payment service is temporarily unavailable. Please use Cash on Delivery or try again later.');
+        return;
+      }
       setStep('payu-gateway');
     }
   };
@@ -309,31 +469,52 @@ export const CheckoutModal: React.FC = () => {
     return 'within 15 days from ordered date';
   };
 
-  const handlePlaceOrder = (status: 'Paid' | 'Pending') => {
+  const handlePlaceOrder = async (status: 'Paid' | 'Pending') => {
     setProcessing(true);
-    setTimeout(() => {
-      const order = placeOrder({
-        customerName: name,
-        customerEmail: email,
-        customerPhone: phone,
-        addressLine: address,
-        city,
-        state,
-        pincode,
-        estimatedDelivery: getDeliveryDateString(),
-        courierPartner: 'Normal Delivery',
-        shippingCost: shippingCost + codFee
-      }, paymentMethod, status);
+    try {
+      if (pendingOrderObj) {
+        if (status === 'Paid') {
+          await databaseService.updateOrderPaymentStatus(pendingOrderObj.id, 'Paid');
+          const updated = await databaseService.getOrderByTxnid(pendingOrderObj.txnid);
+          setPlacedOrderDetails(updated || { ...pendingOrderObj, paymentStatus: 'Paid' });
+        } else {
+          setPlacedOrderDetails(pendingOrderObj);
+        }
+        setStep('success');
+        setPendingOrderObj(null);
+      } else {
+        const order = await placeOrder({
+          customerName: name,
+          customerEmail: email,
+          customerPhone: phone,
+          addressLine: address,
+          city,
+          state,
+          pincode,
+          estimatedDelivery: getDeliveryDateString(),
+          courierPartner: 'Normal Delivery',
+          shippingCost: shippingCost + codFee,
+          appliedCouponCode: appliedCoupon?.code
+        }, paymentMethod, status);
 
-      setPlacedOrderDetails(order);
+        setPlacedOrderDetails(order);
+        setStep('success');
+      }
+    } catch (err) {
+      console.error("Failed to place order:", err);
+    } finally {
       setProcessing(false);
-      setStep('success');
-    }, 1500);
+    }
   };
 
   const handlePayUPaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPayuError('');
+
+    if (import.meta.env.PROD) {
+      setPayuError('Online payment is not configured. Please use Cash on Delivery.');
+      return;
+    }
 
     if (onlineMode === 'UPI') {
       if (upiMethod === 'vpa') {
@@ -411,7 +592,7 @@ Payment Channel: ${placedOrderDetails.paymentMethod}
 Payment Status: ${placedOrderDetails.paymentStatus}
 ========================================
 Thank you for supporting Indian local craftsmanship.
-For support WhatsApp +91 84482 29528
+For support WhatsApp +${siteSettings.whatsapp}
 ========================================
     `;
 
@@ -501,7 +682,7 @@ For support WhatsApp +91 84482 29528
             )}
           </div>
           {step !== 'success' && step !== 'payu-gateway' && (
-            <button onClick={handleClose} style={{ cursor: 'pointer', color: 'var(--text-primary)', background: 'none', border: 'none' }}>
+            <button aria-label="Close checkout" onClick={handleClose} style={{ cursor: 'pointer', color: 'var(--text-primary)', background: 'none', border: 'none' }}>
               <X size={20} />
             </button>
           )}
@@ -631,7 +812,7 @@ For support WhatsApp +91 84482 29528
                         </div>
                         <div className="input-group">
                           <label>10-Digit Mobile</label>
-                          <input type="tel" required pattern="[6-9][0-9]{9}" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))} placeholder="84482 29528" />
+                          <input type="tel" required pattern="[6-9][0-9]{9}" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))} placeholder={siteSettings.supportPhone || "Enter 10-digit mobile"} />
                         </div>
                       </div>
 
@@ -643,7 +824,16 @@ For support WhatsApp +91 84482 29528
                       {!currentUser && (
                         <div className="input-group">
                           <label>Choose Account Password * (For order tracking & future logins)</label>
-                          <input type="password" required value={regPassword} onChange={e => setRegPassword(e.target.value)} placeholder="Create a secure password" />
+                          <input 
+                            type="password" 
+                            required 
+                            minLength={8}
+                            pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?&quot;:{}|<>]).{8,}"
+                            title="Min 8 chars with uppercase, lowercase, number, and special character"
+                            value={regPassword} 
+                            onChange={e => setRegPassword(e.target.value)} 
+                            placeholder="Create a secure password" 
+                          />
                         </div>
                       )}
 
@@ -697,15 +887,40 @@ For support WhatsApp +91 84482 29528
                         </span>
                       </div>
 
+                      {/* Coupon input */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
+                        <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Have a Coupon Code?</label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input 
+                            type="text" 
+                            value={couponInput} 
+                            onChange={e => setCouponInput(e.target.value)} 
+                            placeholder="e.g. FESTIVE20" 
+                            style={{ flex: 1, padding: '10px', border: '1px solid var(--border-light)', borderRadius: '4px', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', textTransform: 'uppercase' }}
+                          />
+                          <button 
+                            type="button" 
+                            onClick={handleApplyCoupon} 
+                            className="gold-button" 
+                            style={{ padding: '10px 16px', fontSize: '0.8rem' }}
+                          >
+                            Apply
+                          </button>
+                        </div>
+                        {couponError && <p style={{ color: '#ff4d4f', fontSize: '0.75rem', margin: '2px 0 0' }}>{couponError}</p>}
+                        {appliedCoupon && <p style={{ color: '#2ecc71', fontSize: '0.75rem', margin: '2px 0 0', fontWeight: 500 }}>Coupon "{appliedCoupon.code}" applied successfully!</p>}
+                      </div>
+
                       {/* Summary row */}
-                      <div style={{ padding: '14px', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', fontSize: '0.85rem' }}>
+                      {shippingThresholdBanner}
+                      <div style={{ padding: '14px', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', fontSize: '0.85rem', marginTop: '10px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: 'var(--text-secondary)' }}>
                           <span>Subtotal ({cart.length} items)</span>
                           <span>₹ {subtotal}</span>
                         </div>
                         {discountAmount > 0 && (
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: '#2ecc71' }}>
-                            <span>Auto Discount (&gt;₹999)</span>
+                            <span>{discountLabel}</span>
                             <span>-₹ {discountAmount}</span>
                           </div>
                         )}
@@ -730,7 +945,11 @@ For support WhatsApp +91 84482 29528
                   
                   <div className="form-two-columns" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div 
+                      role="radio"
+                      aria-checked={paymentMethod === 'Online'}
+                      tabIndex={0}
                       onClick={() => setPaymentMethod('Online')}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPaymentMethod('Online'); } }}
                       style={{
                         padding: '24px',
                         borderRadius: '6px',
@@ -752,7 +971,11 @@ For support WhatsApp +91 84482 29528
                     </div>
 
                     <div 
+                      role="radio"
+                      aria-checked={paymentMethod === 'COD'}
+                      tabIndex={0}
                       onClick={() => setPaymentMethod('COD')}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPaymentMethod('COD'); } }}
                       style={{
                         padding: '24px',
                         borderRadius: '6px',
@@ -774,6 +997,7 @@ For support WhatsApp +91 84482 29528
                     </div>
                   </div>
 
+                  {shippingThresholdBanner}
                   {/* Summary Deck */}
                   <div className="glass" style={{ padding: '16px', borderRadius: '4px', fontSize: '0.85rem', background: 'var(--bg-secondary)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: 'var(--text-secondary)' }}>

@@ -1,4 +1,4 @@
-/* Aura Fine Jewellery - Luxury Design System */
+/* Maa Diaries - Luxury Design System */
 :root {
   /* Color Palette - Tanishq Inspired Luxury Light Theme */
   --bg-primary: #ffffff;        /* Pure Clean White */
@@ -13,7 +13,7 @@
   
   --text-primary: #181516;       /* Charcoal Burgundy Black */
   --text-secondary: #4e4849;     /* Soft warm charcoal */
-  --text-muted: #8a8283;
+  --text-muted: #6b6364;
   --border-light: rgba(131, 39, 41, 0.12);
   --border-focus: #832729;
   
@@ -63,6 +63,15 @@ button, input, select, textarea {
   outline: none;
 }
 
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--gold-primary);
+  outline-offset: 2px;
+}
+
 /* Custom Premium Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -84,12 +93,15 @@ button, input, select, textarea {
   background: var(--bg-card);
   border: 1px solid var(--border-light);
   box-shadow: 0 8px 30px rgba(131, 39, 41, 0.04);
-  transition: border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+  transition: border-color 0.35s ease,
+              box-shadow 0.35s ease,
+              transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass:hover {
-  border-color: rgba(171, 141, 79, 0.35);
-  box-shadow: 0 16px 38px rgba(94, 34, 35, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 50px rgba(131, 39, 41, 0.12);
+  border-color: rgba(171, 141, 79, 0.4);
 }
 
 .gold-text-gradient {
@@ -265,7 +277,7 @@ button, input, select, textarea {
 
 /* Progressive motion layer — it only enhances existing components. */
 @keyframes revealUp {
-  from { opacity: 0; transform: translateY(24px) scale(0.985); }
+  from { opacity: 0; transform: translateY(10px) scale(0.995); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
@@ -279,8 +291,8 @@ button, input, select, textarea {
   50% { box-shadow: 0 0 24px rgba(191, 165, 117, 0.22); }
 }
 
-.motion-reveal { opacity: 0; }
-.motion-reveal.is-visible { animation: revealUp 0.75s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms) both; }
+.motion-reveal { opacity: 1; }
+.motion-reveal.is-visible { animation: none; }
 
 .product-card, .shop-card, .home-product-carousel > div {
   transform-style: preserve-3d;
@@ -325,7 +337,6 @@ footer a:hover, footer button:hover { color: var(--gold-primary); transform: tra
   pointer-events: none;
   filter: blur(2px);
   z-index: 0;
-  animation: auroraDrift 15s ease-in-out infinite;
 }
 .home-page::before { width: 360px; height: 360px; left: -240px; top: 760px; background: radial-gradient(circle, rgba(191,165,117,.16), transparent 68%); }
 .home-page::after { width: 460px; height: 460px; right: -310px; top: 1630px; background: radial-gradient(circle, rgba(131,39,41,.1), transparent 68%); animation-delay: -7s; }
@@ -400,6 +411,8 @@ button[title="Chat on WhatsApp"] { animation: softPulse 2.8s ease-in-out infinit
 .cart-fly-jewel { position: fixed; z-index: 10000; width: 64px; height: 64px; object-fit: cover; border-radius: 50%; pointer-events: none; box-shadow: 0 10px 25px rgba(131,39,41,.28); animation: flyToCart .85s cubic-bezier(.22,.8,.25,1) forwards; }
 .cart-arrival { animation: cartArrival .55s cubic-bezier(.34,1.56,.64,1); }
 
+@keyframes toastSlideIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+
 .quick-view-backdrop { position: fixed; inset: 0; z-index: 4000; display: grid; place-items: center; padding: 24px; background: rgba(25,16,16,.68); backdrop-filter: blur(9px); animation: revealUp .35s ease both; }
 .quick-view-dialog { position: relative; display: grid; grid-template-columns: minmax(280px,.95fr) 1.05fr; width: min(850px, 100%); overflow: hidden; border: 1px solid rgba(191,165,117,.42); border-radius: 14px; background: #fff; box-shadow: 0 30px 100px rgba(0,0,0,.35); }
 .quick-view-image-wrap { min-height: 460px; position: relative; overflow: hidden; background: radial-gradient(circle, #f8efdf, #ded0bd); perspective: 900px; }
@@ -454,6 +467,16 @@ button[title="Chat on WhatsApp"] { animation: softPulse 2.8s ease-in-out infinit
 .home-product-carousel::-webkit-scrollbar { display: none; }
 .home-product-carousel > div { flex: 0 0 min(320px, calc((100% - 60px) / 3)); scroll-snap-align: start; }
 
+/* Category grid - desktop: 4-col grid, pages invisible */
+.category-scroll-mobile {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+.category-scroll-mobile > .category-page {
+  display: contents;
+}
+
 .collections-heading h2 { margin-top: 8px; }
 .collections-categories { padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 10px; }
 .collections-filter-bar { grid-template-columns: minmax(0, 1.5fr) minmax(190px, 1fr) !important; align-items: end; }
@@ -482,7 +505,9 @@ button[title="Chat on WhatsApp"] { animation: softPulse 2.8s ease-in-out infinit
 .about-closing p { color: rgba(255,255,255,0.78); font-size: 0.86rem; line-height: 1.6; }
 
 @media (max-width: 768px) {
-  body {
+html { scroll-behavior: smooth; }
+
+body {
     font-size: 15px;
   }
 
@@ -499,6 +524,67 @@ button[title="Chat on WhatsApp"] { animation: softPulse 2.8s ease-in-out infinit
 
   .home-page {
     gap: 36px !important;
+  }
+
+  .category-scroll-mobile {
+    display: flex !important;
+    grid-template-columns: none !important;
+    gap: 0 !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    padding-bottom: 8px !important;
+  }
+
+  .category-scroll-mobile::-webkit-scrollbar { display: none; }
+
+  .category-scroll-mobile > .category-page {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-rows: repeat(2, 1fr) !important;
+    gap: 12px !important;
+    flex: 0 0 calc(100% - 4px) !important;
+    scroll-snap-align: start !important;
+    min-width: 0 !important;
+  }
+
+  .category-scroll-mobile > .category-page > .category-card {
+    height: 140px !important;
+  }
+
+  .category-scroll-mobile > .category-page > .category-card h3 {
+    font-size: 0.85rem !important;
+  }
+
+  .category-scroll-mobile > .category-page > .category-card p {
+    font-size: 0.65rem !important;
+    margin-top: 2px !important;
+  }
+
+  .trust-section-mobile {
+    display: none !important;
+  }
+
+  .nav-announcement {
+    display: none !important;
+  }
+
+  .why-choose-grid {
+    display: flex !important;
+    grid-template-columns: none !important;
+    gap: 16px !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    scrollbar-width: none !important;
+    max-width: none !important;
+    padding: 0 4px 8px !important;
+  }
+
+  .why-choose-grid > div {
+    flex: 0 0 calc(100% - 32px) !important;
+    max-width: none !important;
+    scroll-snap-align: center !important;
   }
 
   .two-column-layout,
@@ -581,14 +667,244 @@ button[title="Chat on WhatsApp"] { animation: softPulse 2.8s ease-in-out infinit
   .checkout-dialog { max-height: 100dvh !important; border-radius: 0 !important; }
   .checkout-dialog > div:first-child { padding: 16px !important; }
   .checkout-dialog > div:nth-child(2) { padding: 16px !important; }
+
+  .coupon-carousel > .coupon-card {
+    flex: 0 0 calc(100% - 8px) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 20px 18px !important;
+  }
+
+  .home-product-carousel > div {
+    flex: 0 0 calc(50% - 8px) !important;
+    max-width: none !important;
+  }
+  .home-product-carousel > div > div > div:first-child {
+    height: 160px !important;
+  }
+  .home-product-carousel > div > div > div:last-child {
+    padding: 10px !important;
+    gap: 4px !important;
+  }
+  .home-product-carousel > div > div > div:last-child h4 {
+    font-size: 0.78rem !important;
+    line-height: 1.2 !important;
+  }
+  .home-product-carousel > div > div > div:last-child > div > div > div > span:first-child {
+    font-size: 1.2rem !important;
+  }
+  .home-product-carousel > div > div > div:last-child button {
+    padding: 4px 8px !important;
+    font-size: 0.6rem !important;
+  }
 }
 
 @media (max-width: 420px) {
   .stats-grid { grid-template-columns: 1fr !important; }
   .product-grid .shop-card > div:first-child { height: 180px !important; }
   .account-action-grid { grid-template-columns: 1fr !important; }
+
+  .category-scroll-mobile > .category-page > .category-card {
+    height: 120px !important;
+  }
+  .category-scroll-mobile > .category-page > .category-card h3 {
+    font-size: 0.75rem !important;
+  }
+  .category-scroll-mobile > .category-page > .category-card p {
+    display: none !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+}
+
+.coupon-carousel::-webkit-scrollbar { display: none; }
+.coupon-carousel { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Navbar styles (extracted from inline) */
+.nav-link {
+  position: relative;
+  transition: color 0.3s ease;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -4px;
+  left: 0;
+  background-color: var(--gold-hover);
+  transition: width 0.3s ease;
+}
+.nav-link:hover {
+  color: var(--gold-hover) !important;
+}
+.nav-link:hover::after, .nav-link.active::after {
+  width: 100%;
+}
+@media (max-width: 900px) {
+  .desktop-nav {
+    display: none !important;
+  }
+  .desktop-search-form {
+    display: none !important;
+  }
+  .mobile-search-row {
+    display: block !important;
+  }
+  .mobile-menu-btn {
+    display: flex !important;
+  }
+  .navbar-logo-container {
+    position: static !important;
+    transform: none !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+  .navbar-row-1 {
+    padding: 12px 20px !important;
+  }
+  .nav-announcement {
+    padding: 6px 12px !important;
+    font-size: 0.6rem !important;
+    gap: 12px !important;
+  }
+  .announcement-separator {
+    display: none !important;
+  }
+  .brand-text-wrapper {
+    align-items: flex-start !important;
+  }
+  .navbar-actions-container {
+    gap: 6px !important;
+  }
+  .navbar-logo-container img {
+    width: 34px !important;
+    height: 34px !important;
+  }
+  .navbar-logo-container span:first-child {
+    font-size: 1rem !important;
+    letter-spacing: 0.08em !important;
+  }
+  .nav-announcement span {
+    text-align: center;
+  }
+}
+@media (max-width: 480px) {
+  .nav-announcement span:nth-of-type(2), .nav-announcement span:nth-of-type(3) { display: none !important; }
+  .navbar-row-1 { gap: 8px !important; padding: 10px 12px !important; }
+  .navbar-logo-container { gap: 8px !important; }
+  .brand-text-wrapper span:last-child { display: none !important; }
+  .mobile-search-row { padding: 0 12px 12px !important; }
+}
+@media (min-width: 901px) {
+  .desktop-nav {
+    display: flex !important;
+  }
+  .desktop-search-form {
+    display: block !important;
+  }
+  .mobile-search-row {
+    display: none !important;
+  }
+  .mobile-menu-btn {
+    display: none !important;
+  }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Home page styles (extracted from inline) */
+@media (max-width: 768px) {
+  .hero-slider-container {
+    width: 100% !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    height: 55vh !important;
+  }
+  .hero-slider-container h1 {
+    font-size: clamp(2rem, 9vw, 2.7rem) !important;
+    margin-bottom: 12px !important;
+  }
+  .hero-slider-container p {
+    font-size: 0.85rem !important;
+    margin-bottom: 20px !important;
+  }
+  .hero-slider-container .gold-button,
+  .hero-slider-container .gold-button-outline {
+    padding: 10px 14px !important;
+    font-size: 0.72rem !important;
+  }
+  .product-grid-scroll {
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    gap: 16px !important;
+    padding: 10px 20px 24px 20px !important;
+    scroll-behavior: smooth !important;
+    scrollbar-width: none !important;
+  }
+  .product-grid-scroll::-webkit-scrollbar {
+    display: none !important;
+  }
+  .home-product-carousel > div {
+    flex: 0 0 calc(50% - 8px) !important;
+    max-width: none !important;
+    scroll-snap-align: start !important;
+  }
+  .home-product-carousel > div > div > div:first-child {
+    height: 160px !important;
+  }
+  .home-product-carousel > div > div > div:last-child {
+    padding: 10px !important;
+    gap: 4px !important;
+  }
+  .home-product-carousel > div > div > div:last-child h4 {
+    font-size: 0.78rem !important;
+    line-height: 1.2 !important;
+  }
+  .home-product-carousel > div > div > div:last-child > div > div > div > span:first-child {
+    font-size: 1.2rem !important;
+  }
+  .home-product-carousel > div > div > div:last-child button {
+    padding: 4px 8px !important;
+    font-size: 0.6rem !important;
+  }
+  .product-grid-scroll:not(.home-product-carousel) > div {
+    flex: 0 0 80vw !important;
+    max-width: 320px !important;
+    scroll-snap-align: start !important;
+  }
+  .product-card {
+    border-radius: 12px !important;
+  }
+  .trust-section-mobile {
+    display: none !important;
+  }
+  .why-choose-grid {
+    display: flex !important;
+    grid-template-columns: none !important;
+    gap: 16px !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    scrollbar-width: none !important;
+    max-width: none !important;
+    padding: 0 4px 8px !important;
+  }
+  .why-choose-grid > div {
+    flex: 0 0 calc(100% - 32px) !important;
+    max-width: none !important;
+    scroll-snap-align: center !important;
+  }
+  .reviews-carousel {
+    padding-inline: 16px !important;
+  }
+  .reviews-carousel > .glass {
+    flex: 0 0 calc(100% - 32px) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
 }

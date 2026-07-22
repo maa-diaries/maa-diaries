@@ -4,12 +4,12 @@ import { useEffect } from 'react';
 export const MotionEnhancer = () => {
   useEffect(() => {
     const revealTargets = Array.from(document.querySelectorAll<HTMLElement>(
-      '.home-page > div, .page-shell > *, .product-grid > *, .about-difference-card, .account-stat, .order-card'
+      '.home-page > div:not(.hero-slider-container), .page-shell > *, .product-grid > *, .about-difference-card, .account-stat, .order-card'
     ));
 
     revealTargets.forEach((element, index) => {
       element.classList.add('motion-reveal');
-      element.style.setProperty('--reveal-delay', `${Math.min((index % 6) * 70, 350)}ms`);
+      element.style.setProperty('--reveal-delay', `${Math.min((index % 6) * 30, 120)}ms`);
     });
 
     const observer = new IntersectionObserver(
@@ -29,7 +29,11 @@ export const MotionEnhancer = () => {
     const canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     const onMove = (event: MouseEvent) => {
       const card = event.currentTarget as HTMLElement;
-      const rect = card.getBoundingClientRect();
+      let rect = (card as any)._cachedRect;
+      if (!rect) {
+        rect = card.getBoundingClientRect();
+        (card as any)._cachedRect = rect;
+      }
       const x = (event.clientX - rect.left) / rect.width - 0.5;
       const y = (event.clientY - rect.top) / rect.height - 0.5;
       card.style.setProperty('--tilt-x', `${(-y * 3).toFixed(2)}deg`);
@@ -38,6 +42,7 @@ export const MotionEnhancer = () => {
     };
     const onLeave = (event: MouseEvent) => {
       const card = event.currentTarget as HTMLElement;
+      (card as any)._cachedRect = null;
       card.style.setProperty('--tilt-x', '0deg');
       card.style.setProperty('--tilt-y', '0deg');
       card.classList.remove('has-tilt');
