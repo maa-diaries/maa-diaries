@@ -218,6 +218,7 @@ export const AdminPortal: React.FC = () => {
     setBestSellersIds(siteSettings.homeBestSellers || []);
     setTrendingIds(siteSettings.homeTrending || []);
     setIgFeedUrls(siteSettings.instagramFeedUrls || []);
+    setHomeCategories(siteSettings.homeCategories || []);
   }, [siteSettings]);
 
   // Instagram feed handlers

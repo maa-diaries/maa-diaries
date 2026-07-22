@@ -575,6 +575,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
+  // Auto-refresh data when tab regains focus (user returns from admin panel or another tab)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refreshSiteSettings();
+        refreshProducts();
+        refreshCategories();
+        refreshCoupons();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
   // Save cart/wishlist to localStorage on changes
   useEffect(() => {
     localStorage.setItem('md_cart', JSON.stringify(cart));
