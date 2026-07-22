@@ -36,11 +36,7 @@ export const Home: React.FC = () => {
     databaseService.getAllReviews()
       .then(dbReviews => {
         const visibleDefaults = getVisibleDefaultReviews();
-        if (dbReviews.length > 0) {
-          setHomeReviews(dbReviews);
-        } else {
-          setHomeReviews(visibleDefaults);
-        }
+        setHomeReviews([...visibleDefaults, ...dbReviews]);
       })
       .catch(() => {
         setHomeReviews(getVisibleDefaultReviews());
