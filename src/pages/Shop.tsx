@@ -150,7 +150,7 @@ export const Shop: React.FC = () => {
           The Signature Collections
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 300, letterSpacing: '0.05em' }}>
-          Explore our collections of micro-plated rolled gold and anti-tarnish jewelry.
+          Explore our collections of anti-tarnish jewelry.
         </p>
       </div>
 

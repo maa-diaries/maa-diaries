@@ -99,7 +99,7 @@ export const Footer: React.FC = () => {
             lineHeight: '1.6',
             fontWeight: 300
           }}>
-            Premium boutique specializing in micro-plated 18k Rolled Gold, water-resistant anti-tarnish jewelry, and high-quality hair aesthetics.
+            Premium boutique specializing in tarnish-free, water-resistant jewelry and high-quality hair aesthetics, crafted for your everyday elegance.
           </p>
           
           <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>

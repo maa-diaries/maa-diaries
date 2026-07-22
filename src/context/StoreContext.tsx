@@ -427,6 +427,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   useEffect(() => {
+    // Migration/Cache Invalidation: Clear old cached site settings containing obsolete address or brand messaging
+    try {
+      const oldSettings = localStorage.getItem('md_site_settings');
+      if (oldSettings && (oldSettings.includes('New Delhi, India') || oldSettings.includes('Rolled Gold'))) {
+        localStorage.removeItem('md_site_settings');
+      }
+      const oldSettingsV1 = localStorage.getItem('md_site_settings_v1');
+      if (oldSettingsV1 && (oldSettingsV1.includes('New Delhi, India') || oldSettingsV1.includes('Rolled Gold'))) {
+        localStorage.removeItem('md_site_settings_v1');
+      }
+    } catch (e) {
+      console.warn('Failed to clear old localStorage settings cache:', e);
+    }
+
     refreshProducts();
     refreshOrders();
     refreshInquiries();

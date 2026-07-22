@@ -36,7 +36,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/earrings_luxury.png',
     rating: 4.8,
     reviewsCount: 42,
-    metalOptions: ['Anti-Tarnish Silver Plated', '18k Rolled Gold'],
+    metalOptions: ['Anti-Tarnish Silver Plated', '18k Gold Plated'],
     stoneOptions: ['Premium Cubic Zirconia', 'None'],
     specs: {
       metal: 'Anti-Tarnish Plated Copper Base',
@@ -57,10 +57,10 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/earrings_luxury.png',
     rating: 4.9,
     reviewsCount: 31,
-    metalOptions: ['18k Rolled Gold', 'Antique Gold Plated'],
+    metalOptions: ['18k Gold Plated', 'Antique Gold Plated'],
     stoneOptions: ['Polki Kundan Glass', 'Faux Pearls'],
     specs: {
-      metal: '18k Micro-Plated Rolled Gold',
+      metal: '18k Gold Plated',
       coating: 'Anti-Oxidation Shield',
       stoneType: 'Traditional Kundan & Pearls',
       durability: 'Sweat Resistant & Hypoallergenic',
@@ -78,7 +78,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/earrings_luxury.png',
     rating: 4.7,
     reviewsCount: 15,
-    metalOptions: ['Platinum Plated', '18k Rolled Gold'],
+    metalOptions: ['Platinum Plated', '18k Gold Plated'],
     stoneOptions: ['Cubic Zirconia (1.0 Carat)', 'Cubic Zirconia (2.0 Carat)'],
     specs: {
       metal: 'Sterling Silver 925 Base',
@@ -99,7 +99,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/earrings_luxury.png',
     rating: 4.8,
     reviewsCount: 20,
-    metalOptions: ['18k Rolled Gold'],
+    metalOptions: ['18k Gold Plated'],
     stoneOptions: ['Natural Baroque Pearls'],
     specs: {
       metal: '18k Micro-Plated Brass',
@@ -121,10 +121,10 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/earrings_luxury.png',
     rating: 5.0,
     reviewsCount: 26,
-    metalOptions: ['18k Rolled Gold', 'Oxidized Silver Plated'],
+    metalOptions: ['18k Gold Plated', 'Oxidized Silver Plated'],
     stoneOptions: ['Natural Shell Pearls', 'Lab Crystals'],
     specs: {
-      metal: 'Rolled Gold / Oxidized Brass',
+      metal: 'Gold Plated / Oxidized Brass',
       coating: 'Double Lacquer Protective Film',
       stoneType: 'Seed Pearls & Crystals',
       durability: 'Waterproof protective layer',
@@ -181,7 +181,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/earrings_luxury.png',
     rating: 4.9,
     reviewsCount: 22,
-    metalOptions: ['18k Rolled Gold', 'Rose Gold Plated'],
+    metalOptions: ['18k Gold Plated', 'Rose Gold Plated'],
     stoneOptions: ['Imitation Pearls'],
     specs: {
       metal: 'High Grade Brass Base',
@@ -203,7 +203,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/necklace_emerald.png',
     rating: 4.7,
     reviewsCount: 19,
-    metalOptions: ['Anti-Tarnish Silver Plated', '18k Rolled Gold', 'Rose Gold Plated'],
+    metalOptions: ['Anti-Tarnish Silver Plated', '18k Gold Plated', 'Rose Gold Plated'],
     stoneOptions: ['None', 'Single Cubic Zirconia'],
     specs: {
       metal: '316L Stainless Steel Base',
@@ -223,7 +223,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/necklace_emerald.png',
     rating: 4.9,
     reviewsCount: 14,
-    metalOptions: ['18k Rolled Gold', 'Platinum Plated'],
+    metalOptions: ['18k Gold Plated', 'Platinum Plated'],
     stoneOptions: ['Lab Emerald Green Crystal', 'Clear Cubic Zirconia'],
     specs: {
       metal: 'Jeweler Copper Alloy Base',
@@ -243,7 +243,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/necklace_emerald.png',
     rating: 4.8,
     reviewsCount: 23,
-    metalOptions: ['18k Rolled Gold', 'Platinum Plated'],
+    metalOptions: ['18k Gold Plated', 'Platinum Plated'],
     stoneOptions: ['None'],
     specs: {
       metal: 'Surgical Stainless Steel Base',
@@ -263,7 +263,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/necklace_emerald.png',
     rating: 4.8,
     reviewsCount: 16,
-    metalOptions: ['18k Rolled Gold Clasp'],
+    metalOptions: ['18k Gold Plated Clasp'],
     stoneOptions: ['Cultured Freshwater Pearls'],
     specs: {
       metal: 'Freshwater Pearls & Gold Clasp',
@@ -285,7 +285,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/necklace_emerald.png',
     rating: 4.8,
     reviewsCount: 15,
-    metalOptions: ['18k Rolled Gold', 'Anti-Tarnish Silver Plated'],
+    metalOptions: ['18k Gold Plated', 'Anti-Tarnish Silver Plated'],
     stoneOptions: ['AAA Cubic Zirconia'],
     specs: {
       metal: 'Brass alloy micro plated with gold',
@@ -305,7 +305,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/necklace_emerald.png',
     rating: 4.9,
     reviewsCount: 9,
-    metalOptions: ['18k Rolled Gold', 'Platinum Plated'],
+    metalOptions: ['18k Gold Plated', 'Platinum Plated'],
     stoneOptions: ['Lab-Grown Sapphire & CZ'],
     specs: {
       metal: 'Copper Alloy Core Base',
@@ -325,7 +325,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/necklace_emerald.png',
     rating: 4.7,
     reviewsCount: 11,
-    metalOptions: ['18k Rolled Gold', 'Rose Gold Plated'],
+    metalOptions: ['18k Gold Plated', 'Rose Gold Plated'],
     stoneOptions: ['None'],
     specs: {
       metal: '316L Stainless Steel Base',
@@ -345,7 +345,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/necklace_emerald.png',
     rating: 4.8,
     reviewsCount: 13,
-    metalOptions: ['Anti-Tarnish Silver Plated', '18k Rolled Gold'],
+    metalOptions: ['Anti-Tarnish Silver Plated', '18k Gold Plated'],
     stoneOptions: ['Tiny CZ Accents'],
     specs: {
       metal: '925 Silver Base Plated',
@@ -367,7 +367,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/bracelet_gold.png',
     rating: 4.9,
     reviewsCount: 54,
-    metalOptions: ['Anti-Tarnish Silver Plated', '18k Rolled Gold', 'Rose Gold Plated'],
+    metalOptions: ['Anti-Tarnish Silver Plated', '18k Gold Plated', 'Rose Gold Plated'],
     stoneOptions: ['3.0mm AAA Cubic Zirconia', '4.0mm AAA Cubic Zirconia'],
     specs: {
       metal: 'Anti-Tarnish Silver Base',
@@ -387,7 +387,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/bracelet_gold.png',
     rating: 4.8,
     reviewsCount: 26,
-    metalOptions: ['18k Rolled Gold', 'Rose Gold Plated'],
+    metalOptions: ['18k Gold Plated', 'Rose Gold Plated'],
     stoneOptions: ['None'],
     specs: {
       metal: '316L Stainless Steel Base',
@@ -407,7 +407,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/bracelet_gold.png',
     rating: 4.7,
     reviewsCount: 19,
-    metalOptions: ['18k Rolled Gold', 'Anti-Tarnish Silver Plated'],
+    metalOptions: ['18k Gold Plated', 'Anti-Tarnish Silver Plated'],
     stoneOptions: ['None'],
     specs: {
       metal: 'Surgical Stainless Steel Core',
@@ -449,7 +449,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/bracelet_gold.png',
     rating: 4.7,
     reviewsCount: 22,
-    metalOptions: ['Anti-Tarnish Silver Plated', '18k Rolled Gold'],
+    metalOptions: ['Anti-Tarnish Silver Plated', '18k Gold Plated'],
     stoneOptions: ['None'],
     specs: {
       metal: 'Anti-Tarnish Plated Copper',
@@ -489,7 +489,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     image: '/products/bracelet_gold.png',
     rating: 4.8,
     reviewsCount: 14,
-    metalOptions: ['Anti-Tarnish Silver Plated', '18k Rolled Gold'],
+    metalOptions: ['Anti-Tarnish Silver Plated', '18k Gold Plated'],
     stoneOptions: ['None'],
     specs: {
       metal: '925 Sterling Silver Plated Base',

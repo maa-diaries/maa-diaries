@@ -63,7 +63,7 @@ export const Navbar: React.FC = () => {
         <span className="announcement-separator" style={{ opacity: 0.4 }}>|</span>
         <span>🇮🇳 Free Insured Transit Logistics via Shiprocket</span>
         <span className="announcement-separator" style={{ opacity: 0.4 }}>|</span>
-        <span>✨ Handcrafted Premium Rolled Gold</span>
+        <span>✨ Premium Anti-Tarnish Jewellery</span>
       </div>
 
       {/* 2. MAIN HEADER BAR */}

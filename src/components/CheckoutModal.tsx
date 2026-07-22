@@ -579,7 +579,7 @@ Est. Delivery: ${placedOrderDetails.estimatedDelivery}
 ITEMS PURCHASED:
 ${placedOrderDetails.items.map((it: any, i: number) => {
   return `${i + 1}. ${it.product.name} (Qty: ${it.quantity})
-     Anti-Tarnish Plating: 18k Rolled Gold Micro Coating
+     Anti-Tarnish Plating: Premium Anti-Tarnish Coating
      Price: ₹ ${it.product.price.toLocaleString('en-IN')}`;
 }).join('\n')}
 

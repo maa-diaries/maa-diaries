@@ -13,8 +13,8 @@ export const FAQs: React.FC = () => {
   const faqData: Record<'general' | 'care' | 'shipping', FAQItem[]> = {
     general: [
       {
-        question: "What is Rolled Gold?",
-        answer: "Rolled Gold (or gold micro-plated jewelry) is crafted by bonding multiple layers of 18k solid gold over a premium base metal (like sterling silver, copper, or brass) using heat and pressure. It contains up to 5x more gold than standard cheap gold-plated jewelry, giving it the rich, deep tone of real gold at a fraction of the price."
+        question: "What is Anti-Tarnish Gold Plating?",
+        answer: "Our gold jewelry is crafted using premium gold plating, which applies a thick layer of real gold over a high-quality base metal (such as brass or stainless steel). We then seal it with an advanced organic E-coating (protective polymer seal). This gives the jewelry the rich, lustrous look of solid gold while making it waterproof, sweatproof, and highly resistant to tarnishing."
       },
       {
         question: "Is your jewelry hypoallergenic?",

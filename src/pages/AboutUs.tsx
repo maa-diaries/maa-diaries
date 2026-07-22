@@ -9,7 +9,7 @@ export const AboutUs: React.FC = () => {
         <span style={{ fontSize: '0.9rem', color: 'var(--gold-primary)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Our Journey</span>
         <h1 className="gold-text-gradient" style={{ fontSize: '3rem', marginTop: '12px', marginBottom: '24px', fontWeight: 300 }}>Maa Diaries</h1>
         <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', maxWidth: '700px', margin: '0 auto', lineHeight: 1.8 }}>
-          Crafting memories, celebrating everyday elegance, and bringing you the finest selection of tarnish-free, sweatproof, and hypoallergenic rolled gold jewelry and girlish essentials.
+          Crafting memories, celebrating everyday elegance, and bringing you the finest selection of tarnish-free, sweatproof, and hypoallergenic jewelry and girlish essentials.
         </p>
       </div>
 
