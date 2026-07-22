@@ -291,12 +291,17 @@ export const CartDrawer: React.FC = () => {
         {/* Footer Billing Area */}
         {cart.length > 0 && (
           <div style={{
-            padding: '24px',
+            padding: '20px 24px',
             borderTop: '1px solid var(--border-light)',
             backgroundColor: 'var(--bg-secondary)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '16px'
+            gap: '12px',
+            flexShrink: 0,
+            position: 'sticky',
+            bottom: 0,
+            maxHeight: '55vh',
+            overflowY: 'auto'
           }}>
             {/* Promo Code Input */}
             <form onSubmit={handleApplyCoupon} style={{
@@ -347,7 +352,7 @@ export const CartDrawer: React.FC = () => {
             )}
 
             {/* Subtotal details */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.9rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.85rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
                 <span>Subtotal</span>
                 <span>₹{subtotal.toLocaleString('en-IN')}</span>
@@ -377,8 +382,11 @@ export const CartDrawer: React.FC = () => {
               style={{
                 width: '100%',
                 display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 gap: '8px',
-                marginTop: '8px'
+                padding: '14px',
+                marginTop: '4px'
               }}
             >
               Proceed to Secure Checkout <ArrowRight size={16} />

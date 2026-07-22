@@ -789,7 +789,7 @@ For support WhatsApp +${siteSettings.whatsapp}
                       </button>
                     </form>
                   ) : (
-                    <form onSubmit={handleShippingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                    <form onSubmit={handleShippingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                       {currentUser && (
                         <div style={{
                           backgroundColor: 'rgba(46, 204, 113, 0.06)',
@@ -811,8 +811,8 @@ For support WhatsApp +${siteSettings.whatsapp}
                           <input type="text" required value={name} onChange={e => setName(e.target.value)} placeholder="Enter full name" />
                         </div>
                         <div className="input-group">
-                          <label>10-Digit Mobile</label>
-                          <input type="tel" required pattern="[6-9][0-9]{9}" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))} placeholder={siteSettings.supportPhone || "Enter 10-digit mobile"} />
+                          <label>Mobile Number</label>
+                          <input type="tel" required maxLength={10} pattern="[6-9][0-9]{9}" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))} placeholder="Enter 10-digit mobile" />
                         </div>
                       </div>
 
@@ -870,11 +870,10 @@ For support WhatsApp +${siteSettings.whatsapp}
                         border: '1px solid var(--border-light)',
                         background: 'var(--bg-secondary)',
                         borderRadius: '6px',
-                        padding: '16px',
+                        padding: '12px 16px',
                         display: 'flex',
                         justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginTop: '10px'
+                        alignItems: 'center'
                       }}>
                         <div>
                           <span style={{ color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600, display: 'block' }}>Normal Delivery</span>
@@ -888,7 +887,7 @@ For support WhatsApp +${siteSettings.whatsapp}
                       </div>
 
                       {/* Coupon input */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Have a Coupon Code?</label>
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <input 
@@ -913,7 +912,7 @@ For support WhatsApp +${siteSettings.whatsapp}
 
                       {/* Summary row */}
                       {shippingThresholdBanner}
-                      <div style={{ padding: '14px', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', fontSize: '0.85rem', marginTop: '10px' }}>
+                      <div style={{ padding: '12px 14px', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', fontSize: '0.85rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: 'var(--text-secondary)' }}>
                           <span>Subtotal ({cart.length} items)</span>
                           <span>₹ {subtotal}</span>
@@ -930,7 +929,7 @@ For support WhatsApp +${siteSettings.whatsapp}
                         </div>
                       </div>
 
-                      <button type="submit" className="gold-button" style={{ width: '100%' }}>
+                      <button type="submit" className="gold-button" style={{ width: '100%', padding: '14px', position: 'sticky', bottom: 0, zIndex: 2, marginTop: '8px' }}>
                         Proceed to Payment Options
                       </button>
                     </form>
@@ -1313,7 +1312,7 @@ For support WhatsApp +${siteSettings.whatsapp}
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', gap: '16px', marginTop: '10px' }}>
+                    <div style={{ display: 'flex', gap: '16px', marginTop: '10px', position: 'sticky', bottom: 0, zIndex: 2, background: 'var(--bg-secondary)', padding: '12px 0 4px' }}>
                       <button 
                         type="button" 
                         onClick={() => {

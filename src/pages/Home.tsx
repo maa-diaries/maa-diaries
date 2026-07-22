@@ -372,8 +372,8 @@ export const Home: React.FC = () => {
           </div>
           <div>
             <div style={{ color: 'var(--gold-primary)', marginBottom: '10px', display: 'flex', justifyContent: 'center' }}><Award size={28} /></div>
-            <h4 style={{ color: 'var(--text-primary)', fontSize: '0.95rem', marginBottom: '4px' }}>18k Gold Plating</h4>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Rich look and heavy gold micro-plating</p>
+            <h4 style={{ color: 'var(--text-primary)', fontSize: '0.95rem', marginBottom: '4px' }}>Hypoallergenic & Skin-Safe</h4>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Nickel-free brass & stainless steel bases</p>
           </div>
           <div>
             <div style={{ color: 'var(--gold-primary)', marginBottom: '10px', display: 'flex', justifyContent: 'center' }}><MessageSquare size={28} /></div>
