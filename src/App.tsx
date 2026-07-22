@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { ToastProvider } from './components/Toast';
 import { Navbar } from './components/Navbar';
@@ -185,6 +186,7 @@ function App() {
             } />
             <Route path="*" element={<AppContent />} />
           </Routes>
+          <SpeedInsights />
         </ToastProvider>
       </StoreProvider>
     </BrowserRouter>
