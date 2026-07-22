@@ -181,10 +181,10 @@ export const AdminPortal: React.FC = () => {
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     supabase.auth.getSession().then(({ data }: any) => {
-      setIsAuthenticated(data.session?.user?.email === 'admin@maadiaries.com');
+      setIsAuthenticated(data.session?.user?.email === 'founder@maadiaries.com');
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-      setIsAuthenticated(session?.user?.email === 'admin@maadiaries.com');
+      setIsAuthenticated(session?.user?.email === 'founder@maadiaries.com');
     });
     return () => listener.subscription.unsubscribe();
   }, []);

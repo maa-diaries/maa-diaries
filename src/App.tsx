@@ -133,7 +133,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (currentUser?.email === 'admin@maadiaries.com') {
+    if (currentUser?.email === 'founder@maadiaries.com') {
       setIsAdmin(true);
       setLoading(false);
     } else if (currentUser) {
@@ -144,7 +144,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
         const { isSupabaseConfigured, supabase } = await import('./services/supabase');
         if (isSupabaseConfigured) {
           const { data } = await supabase.auth.getSession();
-          if (data.session?.user?.email === 'admin@maadiaries.com') {
+          if (data.session?.user?.email === 'founder@maadiaries.com') {
             setIsAdmin(true);
             setLoading(false);
             return;

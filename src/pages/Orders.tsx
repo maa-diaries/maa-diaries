@@ -12,7 +12,7 @@ export const Orders: React.FC = () => {
   // Filter orders to only show the current user's orders (admin sees all)
   const userOrders = currentUser
     ? orders.filter(order => {
-        const isAdmin = currentUser.email === 'admin@maadiaries.com';
+        const isAdmin = currentUser.email === 'founder@maadiaries.com';
         if (isAdmin) return true;
         return order.customerEmail.toLowerCase() === currentUser.email.toLowerCase()
           || order.customerPhone === currentUser.phone;

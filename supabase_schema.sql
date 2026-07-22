@@ -50,7 +50,7 @@ AS $$
   SELECT EXISTS (
     SELECT 1 FROM auth.users
     WHERE id = auth.uid()
-      AND email = 'admin@maadiaries.com'
+      AND email = 'founder@maadiaries.com'
   );
 $$;
 
