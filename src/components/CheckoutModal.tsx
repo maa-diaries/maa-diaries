@@ -325,6 +325,7 @@ export const CheckoutModal: React.FC = () => {
       }
     }
     
+    setPayuError('');
     setStep('payment-select');
   };
 
@@ -500,8 +501,9 @@ export const CheckoutModal: React.FC = () => {
         setPlacedOrderDetails(order);
         setStep('success');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to place order:", err);
+      setPayuError(err?.message || "Failed to place order. Please try again.");
     } finally {
       setProcessing(false);
     }
@@ -1018,6 +1020,21 @@ For support WhatsApp +${siteSettings.whatsapp}
                       <span>₹ {grandTotal}</span>
                     </div>
                   </div>
+
+                  {payuError && (
+                    <div role="alert" style={{
+                      padding: '10px 14px',
+                      borderRadius: '6px',
+                      backgroundColor: 'rgba(231, 76, 60, 0.08)',
+                      border: '1px solid rgba(231, 76, 60, 0.2)',
+                      color: '#e74c3c',
+                      fontSize: '0.8rem',
+                      lineHeight: 1.4,
+                      marginTop: '8px'
+                    }}>
+                      {payuError}
+                    </div>
+                  )}
 
                   <div style={{ display: 'flex', gap: '16px', marginTop: '10px' }}>
                     <button onClick={() => setStep('shipping')} className="gold-button-outline" style={{ flex: 1 }}>

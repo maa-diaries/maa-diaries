@@ -135,9 +135,9 @@ CREATE POLICY "orders_select_own_or_admin" ON public.orders
     customer_email = (auth.jwt() ->> 'email')
     OR public.is_admin()
   );
--- Anyone authenticated can place an order (insert)
-CREATE POLICY "orders_insert_authenticated" ON public.orders
-  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL OR public.is_admin());
+-- Anyone can place an order (insert)
+CREATE POLICY "orders_insert_public" ON public.orders
+  FOR INSERT WITH CHECK (true);
 -- Only admin can update order status, tracking, etc.
 CREATE POLICY "orders_update_admin" ON public.orders
   FOR UPDATE USING (public.is_admin());
@@ -194,12 +194,9 @@ CREATE POLICY "users_select_own_or_admin" ON public.registered_users
     email = (auth.jwt() ->> 'email')
     OR public.is_admin()
   );
--- Users can insert their own profile during registration
-CREATE POLICY "users_insert_own" ON public.registered_users
-  FOR INSERT WITH CHECK (
-    email = (auth.jwt() ->> 'email')
-    OR public.is_admin()
-  );
+-- Anyone can insert a profile during registration
+CREATE POLICY "users_insert_public" ON public.registered_users
+  FOR INSERT WITH CHECK (true);
 -- Users can update their own profile
 CREATE POLICY "users_update_own_or_admin" ON public.registered_users
   FOR UPDATE USING (
