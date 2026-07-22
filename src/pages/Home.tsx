@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { databaseService } from '../services/database';
+import { getVisibleDefaultReviews } from '../data/defaultReviews';
 
 const defaultCategories = [
   { id: 'earrings', name: 'Earrings', desc: 'Western & Traditional', image: 'https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=400&q=80' },
@@ -33,8 +34,17 @@ export const Home: React.FC = () => {
   // Load reviews for home page
   useEffect(() => {
     databaseService.getAllReviews()
-      .then(setHomeReviews)
-      .catch(console.error);
+      .then(dbReviews => {
+        const visibleDefaults = getVisibleDefaultReviews();
+        if (dbReviews.length > 0) {
+          setHomeReviews(dbReviews);
+        } else {
+          setHomeReviews(visibleDefaults);
+        }
+      })
+      .catch(() => {
+        setHomeReviews(getVisibleDefaultReviews());
+      });
   }, []);
   const { setShopCategory, products, siteSettings, coupons, cart } = useStore();
   const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);

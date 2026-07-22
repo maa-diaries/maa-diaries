@@ -11,6 +11,7 @@ import {
   Eye, X, Check, Truck, CreditCard, Settings, Percent,
   XCircle, Star, MessageSquare, ArrowUp, ArrowDown, Home, Search, Globe
 } from 'lucide-react';
+import { DEFAULT_REVIEWS, getDeletedDefaultReviewIds, markDefaultReviewDeleted } from '../data/defaultReviews';
 
 type AdminTab = 'dashboard' | 'products' | 'orders' | 'customers' | 'payments' | 'settings' | 'reviews' | 'media' | 'notifications' | 'homepage';
 
@@ -119,7 +120,9 @@ export const AdminPortal: React.FC = () => {
   const loadAllReviews = async () => {
     try {
       const data = await databaseService.getAllReviews();
-      setAllReviews(data);
+      const deletedDefaults = getDeletedDefaultReviewIds();
+      const visibleDefaults = DEFAULT_REVIEWS.filter(r => !deletedDefaults.includes(r.id));
+      setAllReviews([...visibleDefaults, ...data]);
     } catch (err) {
       console.warn("Failed to load reviews:", err);
     }
@@ -134,7 +137,12 @@ export const AdminPortal: React.FC = () => {
   const handleDeleteReview = async (reviewId: string) => {
     if (window.confirm("Are you sure you want to delete this review?")) {
       try {
-        await databaseService.deleteProductReview(reviewId);
+        const isDefault = DEFAULT_REVIEWS.some(r => r.id === reviewId);
+        if (isDefault) {
+          markDefaultReviewDeleted(reviewId);
+        } else {
+          await databaseService.deleteProductReview(reviewId);
+        }
         loadAllReviews();
       } catch (err) {
         console.error("Failed to delete review:", err);
@@ -145,6 +153,11 @@ export const AdminPortal: React.FC = () => {
   const handlePostReply = async (reviewId: string) => {
     const text = replyInputs[reviewId]?.trim();
     if (!text) return;
+    const isDefault = DEFAULT_REVIEWS.some(r => r.id === reviewId);
+    if (isDefault) {
+      showToast('Default reviews cannot have replies. Delete and recreate as a real review instead.', 'error');
+      return;
+    }
     try {
       await replyToReview(reviewId, text);
       setReplyInputs(prev => ({ ...prev, [reviewId]: '' }));
@@ -1881,6 +1894,9 @@ export const AdminPortal: React.FC = () => {
                           <div>
                             <span style={{ fontWeight: 600, display: 'block', color: 'var(--text-primary)' }}>{product?.name || 'Unknown Product'}</span>
                             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>ID: {r.productId}</span>
+                            {DEFAULT_REVIEWS.some(d => d.id === r.id) && (
+                              <span style={{ fontSize: '0.65rem', padding: '1px 6px', borderRadius: '3px', backgroundColor: 'rgba(241, 196, 15, 0.15)', color: '#f39c12', fontWeight: 600, marginTop: '2px', display: 'inline-block' }}>Default</span>
+                            )}
                           </div>
                         </td>
                         <td style={{ padding: '12px', fontWeight: 500, color: 'var(--text-primary)' }}>{r.userName}</td>
