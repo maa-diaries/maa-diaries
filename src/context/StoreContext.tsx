@@ -86,13 +86,13 @@ interface StoreContextType {
   
   currentUser: UserProfile | null;
   loginUser: (emailOrPhone: string, password?: string) => Promise<boolean>;
-  registerUser: (profile: UserProfile, password?: string) => Promise<{ success: boolean; needsVerification?: boolean; message?: string }>;
+  registerUser: (profile: UserProfile, password?: string, skipVerification?: boolean) => Promise<{ success: boolean; needsVerification?: boolean; verificationCode?: string; message?: string }>;
   resetPassword: (email: string) => Promise<{ success: boolean; message: string }>;
   cancelOrder: (orderId: string) => Promise<boolean>;
   logoutUser: () => void;
   getProductReviews: (productId: string) => Promise<ProductReview[]>;
   submitProductReview: (review: Omit<ProductReview, 'id' | 'createdAt'>) => Promise<ProductReview>;
-  sendEmailViaResend: (type: 'order' | 'feedback' | 'review' | 'delivery_update' | 'welcome', payload: any) => Promise<void>;
+  sendEmailViaResend: (type: 'order' | 'feedback' | 'review' | 'delivery_update' | 'welcome' | 'verification' | 'reset_password', payload: any) => Promise<void>;
   categories: string[];
   addCategory: (name: string) => Promise<void>;
   deleteCategory: (name: string) => Promise<void>;
@@ -271,10 +271,40 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return false;
   };
 
-  const registerUser = async (profile: UserProfile, password?: string): Promise<{ success: boolean; needsVerification?: boolean; message?: string }> => {
+  const registerUser = async (profile: UserProfile, password?: string, skipVerification = false): Promise<{ success: boolean; needsVerification?: boolean; verificationCode?: string; message?: string }> => {
+    if (!skipVerification) {
+      // 1. Check if user already exists
+      const existingEmail = await databaseService.getUserByEmail(profile.email);
+      if (existingEmail) {
+        return { success: false, message: "This email is already registered. Please log in instead." };
+      }
+      if (profile.phone) {
+        const existingPhone = await databaseService.getUserByPhone(profile.phone);
+        if (existingPhone) {
+          return { success: false, message: "This phone number is already registered." };
+        }
+      }
+
+      // 2. Generate custom 6-digit OTP code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+      // 3. Send verification email via Resend
+      try {
+        await sendEmailViaResend('verification', { name: profile.name, email: profile.email, code });
+        return {
+          success: true,
+          needsVerification: true,
+          verificationCode: code,
+          message: "A 6-digit verification code has been sent to your email. Please enter it to complete registration."
+        };
+      } catch (err: any) {
+        return { success: false, message: "Failed to send verification email: " + (err.message || err) };
+      }
+    }
+
     if (isSupabaseConfigured && profile.email) {
       // 1. Create Supabase Auth user with full metadata
-      const { data, error: authError } = await supabase.auth.signUp({
+      const { error: authError } = await supabase.auth.signUp({
         email: profile.email,
         password: password || crypto.randomUUID(), // random password if none provided
         options: {
@@ -290,17 +320,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
       if (authError) {
         return { success: false, message: authError.message };
-      }
-
-      // Check if email confirmation is required and session is null
-      const needsVerification = data.session === null;
-
-      if (needsVerification) {
-        return { 
-          success: true, 
-          needsVerification: true, 
-          message: "A verification email has been sent. Please confirm your email before logging in." 
-        };
       }
 
       // 2. Save profile to registered_users table (only if verification is disabled/already logged in)
@@ -340,13 +359,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!isSupabaseConfigured) {
       return { success: false, message: 'Password reset is not available in demo mode.' };
     }
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/account'
-    });
-    if (error) {
-      return { success: false, message: error.message || 'Failed to send reset email.' };
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type: 'reset_password',
+          payload: {
+            email,
+            origin: window.location.origin
+          }
+        })
+      });
+      const result = await response.json();
+      if (!response.ok || result.error) {
+        return { success: false, message: result.error || 'Failed to send reset email.' };
+      }
+      return { success: true, message: 'Password reset link sent to your email.' };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Failed to send reset email.' };
     }
-    return { success: true, message: 'Password reset link sent to your email.' };
   };
 
   const cancelOrder = async (orderId: string): Promise<boolean> => {
@@ -596,7 +630,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Email service helper via Resend Vercel Serverless Function
-  const sendEmailViaResend = async (type: 'order' | 'feedback' | 'review' | 'delivery_update' | 'welcome', payload: any) => {
+  const sendEmailViaResend = async (type: 'order' | 'feedback' | 'review' | 'delivery_update' | 'welcome' | 'verification' | 'reset_password', payload: any) => {
     try {
       const response = await fetch('/api/send-email', {
         method: 'POST',

@@ -41,6 +41,10 @@ export const MyAccount: React.FC = () => {
   const [regCity, setRegCity] = useState('');
   const [regState, setRegState] = useState('');
   const [regPincode, setRegPincode] = useState('');
+  const [showRegOtp, setShowRegOtp] = useState(false);
+  const [regOtpCode, setRegOtpCode] = useState('');
+  const [expectedRegOtp, setExpectedRegOtp] = useState('');
+  const [regLoading, setRegLoading] = useState(false);
 
   // Handle direct tracking click
   const handleTrackOrderClick = (orderId: string) => {
@@ -67,6 +71,56 @@ export const MyAccount: React.FC = () => {
       }
     } catch (err: any) {
       setError(err?.message || "Failed to log in.");
+    }
+  };
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccessMessage(null);
+    if (!regOtpCode || regOtpCode.length !== 6) {
+      setError("Please enter a valid 6-digit verification code.");
+      return;
+    }
+    if (regOtpCode !== expectedRegOtp) {
+      setError("Invalid verification code. Please check your email.");
+      return;
+    }
+
+    setRegLoading(true);
+    try {
+      const result = await registerUser({
+        name: regName,
+        email: regEmail,
+        phone: regPhone,
+        addressLine: regAddress,
+        city: regCity,
+        state: regState,
+        pincode: regPincode
+      }, regPassword, true); // skipVerification = true!
+
+      if (!result.success) {
+        setError(result.message || "Registration failed.");
+      } else {
+        setError(null);
+        setSuccessMessage("Registration successful! Welcome to Maa Diaries.");
+        setShowRegOtp(false);
+        setRegOtpCode('');
+        setExpectedRegOtp('');
+        // Reset registration form
+        setRegName('');
+        setRegEmail('');
+        setRegPhone('');
+        setRegPassword('');
+        setRegAddress('');
+        setRegCity('');
+        setRegState('');
+        setRegPincode('');
+      }
+    } catch (err: any) {
+      setError(err?.message || "Registration failed.");
+    } finally {
+      setRegLoading(false);
     }
   };
 
@@ -99,6 +153,7 @@ export const MyAccount: React.FC = () => {
       return;
     }
 
+    setRegLoading(true);
     try {
       const result = await registerUser({
         name: regName,
@@ -115,22 +170,26 @@ export const MyAccount: React.FC = () => {
       } else {
         setError(null);
         if (result.needsVerification) {
-          setSuccessMessage(result.message || "Registration successful! Please verify your email before logging in.");
+          setExpectedRegOtp(result.verificationCode || '');
+          setShowRegOtp(true);
+          setSuccessMessage(result.message || "A 6-digit verification code has been sent to your email.");
         } else {
           setSuccessMessage("Registration successful! Welcome to Maa Diaries.");
+          // Reset registration form
+          setRegName('');
+          setRegEmail('');
+          setRegPhone('');
+          setRegPassword('');
+          setRegAddress('');
+          setRegCity('');
+          setRegState('');
+          setRegPincode('');
         }
-        // Reset registration form
-        setRegName('');
-        setRegEmail('');
-        setRegPhone('');
-        setRegPassword('');
-        setRegAddress('');
-        setRegCity('');
-        setRegState('');
-        setRegPincode('');
       }
     } catch (err: any) {
       setError(err?.message || "Registration failed.");
+    } finally {
+      setRegLoading(false);
     }
   };
 
@@ -221,113 +280,142 @@ export const MyAccount: React.FC = () => {
 
           {/* Form */}
           {isRegister ? (
-            <form onSubmit={handleRegisterSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>Full Name</label>
-                <input 
-                  type="text" 
-                  className="search-input" 
-                  placeholder="e.g. Satya Sharma" 
-                  value={regName}
-                  onChange={(e) => setRegName(e.target.value)}
-                  style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>Email Address</label>
-                  <input 
-                    type="email" 
-                    className="search-input" 
-                    placeholder="name@example.com" 
-                    value={regEmail}
-                    onChange={(e) => setRegEmail(e.target.value)}
-                    style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
-                  />
+            showRegOtp ? (
+              <form onSubmit={handleOtpSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 15px' }}>
+                    We sent a 6-digit verification code to <strong>{regEmail}</strong>. Please enter it below to confirm your email.
+                  </p>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>Mobile Number</label>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>Verification Code</label>
                   <input 
                     type="text" 
                     className="search-input" 
-                    placeholder="10-digit number" 
-                    maxLength={10}
-                    value={regPhone}
-                    onChange={(e) => setRegPhone(e.target.value)}
-                    style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>Password</label>
-                <input 
-                  type="password" 
-                  className="search-input" 
-                  placeholder="Create password" 
-                  value={regPassword}
-                  onChange={(e) => setRegPassword(e.target.value)}
-                  minLength={8}
-                  pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?&quot;:{}|<>]).{8,}"
-                  title="Min 8 chars with uppercase, lowercase, number, and special character"
-                  style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>Street Address</label>
-                <input 
-                  type="text" 
-                  className="search-input" 
-                  placeholder="Flat, House no., Building, Street" 
-                  value={regAddress}
-                  onChange={(e) => setRegAddress(e.target.value)}
-                  style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>City</label>
-                  <input 
-                    type="text" 
-                    className="search-input" 
-                    placeholder="City" 
-                    value={regCity}
-                    onChange={(e) => setRegCity(e.target.value)}
-                    style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>State</label>
-                  <input 
-                    type="text" 
-                    className="search-input" 
-                    placeholder="State" 
-                    value={regState}
-                    onChange={(e) => setRegState(e.target.value)}
-                    style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>PIN Code</label>
-                  <input 
-                    type="text" 
-                    className="search-input" 
-                    placeholder="6 digits" 
+                    placeholder="Enter 6-digit code" 
                     maxLength={6}
-                    value={regPincode}
-                    onChange={(e) => setRegPincode(e.target.value)}
+                    value={regOtpCode}
+                    onChange={(e) => setRegOtpCode(e.target.value.replace(/\D/g, ''))}
+                    style={{ width: '100%', height: '42px', padding: '0 12px', fontSize: '1.2rem', textAlign: 'center', letterSpacing: '8px', border: '1px solid var(--border-light)', borderRadius: '4px' }}
+                  />
+                </div>
+                
+                <button type="submit" className="gold-button" disabled={regLoading} style={{ width: '100%', height: '44px', marginTop: '12px' }}>
+                  {regLoading ? "Verifying..." : "Verify Code & Register"}
+                </button>
+                <button type="button" onClick={() => setShowRegOtp(false)} className="text-button" style={{ width: '100%', textAlign: 'center', fontSize: '0.85rem', marginTop: '8px', color: 'var(--text-secondary)', cursor: 'pointer', background: 'none', border: 'none' }}>
+                  Back to Registration
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleRegisterSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>Full Name</label>
+                  <input 
+                    type="text" 
+                    className="search-input" 
+                    placeholder="e.g. Satya Sharma" 
+                    value={regName}
+                    onChange={(e) => setRegName(e.target.value)}
                     style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
                   />
                 </div>
-              </div>
 
-              <button type="submit" className="gold-button" style={{ width: '100%', height: '44px', marginTop: '12px' }}>
-                Register Account
-              </button>
-            </form>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>Email Address</label>
+                    <input 
+                      type="email" 
+                      className="search-input" 
+                      placeholder="name@example.com" 
+                      value={regEmail}
+                      onChange={(e) => setRegEmail(e.target.value)}
+                      style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>Mobile Number</label>
+                    <input 
+                      type="text" 
+                      className="search-input" 
+                      placeholder="10-digit number" 
+                      maxLength={10}
+                      value={regPhone}
+                      onChange={(e) => setRegPhone(e.target.value)}
+                      style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>Password</label>
+                  <input 
+                    type="password" 
+                    className="search-input" 
+                    placeholder="Create password" 
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    minLength={8}
+                    pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?&quot;:{}|<>]).{8,}"
+                    title="Min 8 chars with uppercase, lowercase, number, and special character"
+                    style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>Street Address</label>
+                  <input 
+                    type="text" 
+                    className="search-input" 
+                    placeholder="Flat, House no., Building, Street" 
+                    value={regAddress}
+                    onChange={(e) => setRegAddress(e.target.value)}
+                    style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>City</label>
+                    <input 
+                      type="text" 
+                      className="search-input" 
+                      placeholder="City" 
+                      value={regCity}
+                      onChange={(e) => setRegCity(e.target.value)}
+                      style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>State</label>
+                    <input 
+                      type="text" 
+                      className="search-input" 
+                      placeholder="State" 
+                      value={regState}
+                      onChange={(e) => setRegState(e.target.value)}
+                      style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '5px' }}>PIN Code</label>
+                    <input 
+                      type="text" 
+                      className="search-input" 
+                      placeholder="6 digits" 
+                      maxLength={6}
+                      value={regPincode}
+                      onChange={(e) => setRegPincode(e.target.value)}
+                      style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
+                    />
+                  </div>
+                </div>
+
+                <button type="submit" className="gold-button" disabled={regLoading} style={{ width: '100%', height: '44px', marginTop: '12px' }}>
+                  {regLoading ? "Sending Verification..." : "Register Account"}
+                </button>
+              </form>
+            )
           ) : (
             <form onSubmit={handleLoginSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>

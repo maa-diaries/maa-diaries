@@ -157,6 +157,9 @@ export const CheckoutModal: React.FC = () => {
   const [loginPassword, setLoginPassword] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [authError, setAuthError] = useState('');
+  const [showRegOtp, setShowRegOtp] = useState(false);
+  const [regOtpCode, setRegOtpCode] = useState('');
+  const [expectedRegOtp, setExpectedRegOtp] = useState('');
 
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
@@ -271,6 +274,49 @@ export const CheckoutModal: React.FC = () => {
 
   if (!checkoutOpen) return null;
 
+  const handleRegOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    if (!regOtpCode || regOtpCode.length !== 6) {
+      setAuthError('Please enter a valid 6-digit verification code.');
+      return;
+    }
+    if (regOtpCode !== expectedRegOtp) {
+      setAuthError('Invalid verification code. Please check your email.');
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const result = await registerUser({
+        name,
+        email,
+        phone,
+        addressLine: address,
+        city,
+        state,
+        pincode
+      }, regPassword, true); // skipVerification = true!
+
+      if (!result.success) {
+        setAuthError(result.message || 'Registration failed.');
+        setProcessing(false);
+        return;
+      }
+
+      setProcessing(false);
+      setShowRegOtp(false);
+      setRegOtpCode('');
+      setExpectedRegOtp('');
+      // Proceed to payment selection
+      setPayuError('');
+      setStep('payment-select');
+    } catch (err: any) {
+      setAuthError(err?.message || 'Registration failed.');
+      setProcessing(false);
+    }
+  };
+
   const handleShippingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPincodeError('');
@@ -299,6 +345,7 @@ export const CheckoutModal: React.FC = () => {
         return;
       }
       
+      setProcessing(true);
       try {
         const result = await registerUser({
           name,
@@ -317,7 +364,8 @@ export const CheckoutModal: React.FC = () => {
         }
 
         if (result.needsVerification) {
-          setAuthError(result.message || 'A verification email has been sent. Please confirm before completing checkout.');
+          setExpectedRegOtp(result.verificationCode || '');
+          setShowRegOtp(true);
           setProcessing(false);
           return;
         }
@@ -325,6 +373,8 @@ export const CheckoutModal: React.FC = () => {
         setAuthError(err?.message || 'Registration failed.');
         setProcessing(false);
         return;
+      } finally {
+        setProcessing(false);
       }
     }
     
@@ -794,150 +844,180 @@ For support WhatsApp +${siteSettings.whatsapp}
                       </button>
                     </form>
                   ) : (
-                    <form onSubmit={handleShippingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                      {currentUser && (
-                        <div style={{
-                          backgroundColor: 'rgba(46, 204, 113, 0.06)',
-                          border: '1px solid rgba(46, 204, 113, 0.2)',
-                          borderRadius: '6px',
-                          padding: '10px 14px',
-                          fontSize: '0.82rem',
-                          color: '#27ae60',
-                          marginTop: '4px',
-                          fontWeight: 500
-                        }}>
-                          Logged in as <strong>{currentUser.name}</strong>. Shipping details pre-filled.
-                        </div>
-                      )}
-
-                      <div className="form-two-columns" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <div className="input-group">
-                          <label>Contact Name</label>
-                          <input type="text" required value={name} onChange={e => setName(e.target.value)} placeholder="Enter full name" />
+                    showRegOtp ? (
+                      <form onSubmit={handleRegOtpSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 15px' }}>
+                            We sent a 6-digit verification code to <strong>{email}</strong>. Please enter it below to confirm your email.
+                          </p>
                         </div>
                         <div className="input-group">
-                          <label>Mobile Number</label>
-                          <input type="tel" required maxLength={10} pattern="[6-9][0-9]{9}" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))} placeholder="Enter 10-digit mobile" />
-                        </div>
-                      </div>
-
-                      <div className="input-group">
-                        <label>Email ID</label>
-                        <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="customer@domain.com" />
-                      </div>
-
-                      {!currentUser && (
-                        <div className="input-group">
-                          <label>Choose Account Password * (For order tracking & future logins)</label>
-                          <input 
-                            type="password" 
-                            required 
-                            minLength={8}
-                            pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?&quot;:{}|<>]).{8,}"
-                            title="Min 8 chars with uppercase, lowercase, number, and special character"
-                            value={regPassword} 
-                            onChange={e => setRegPassword(e.target.value)} 
-                            placeholder="Create a secure password" 
-                          />
-                        </div>
-                      )}
-
-                      <div className="input-group">
-                        <label>Street Address / House No.</label>
-                        <input type="text" required value={address} onChange={e => setAddress(e.target.value)} placeholder="Apt name, block number, street details" />
-                      </div>
-
-                      <div className="form-three-columns" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-                        <div className="input-group">
-                          <label>City</label>
-                          <input type="text" required value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Mumbai" />
-                        </div>
-                        <div className="input-group">
-                          <label>State</label>
-                          <input type="text" required value={state} onChange={e => setState(e.target.value)} placeholder="e.g. Delhi" />
-                        </div>
-                        <div className="input-group">
-                          <label>PIN Code</label>
+                          <label>Verification Code</label>
                           <input 
                             type="text" 
-                            maxLength={6} 
-                            required 
-                            value={pincode} 
-                            onChange={e => setPincode(e.target.value.replace(/\D/g, ''))} 
-                            placeholder="110001" 
+                            placeholder="Enter 6-digit code" 
+                            maxLength={6}
+                            value={regOtpCode}
+                            onChange={e => setRegOtpCode(e.target.value.replace(/\D/g, ''))}
+                            style={{ width: '100%', height: '42px', padding: '0 12px', fontSize: '1.2rem', textAlign: 'center', letterSpacing: '8px', border: '1px solid var(--border-light)', borderRadius: '4px' }}
                           />
                         </div>
-                      </div>
-                      {pincodeError && <p style={{ color: '#ff4d4f', fontSize: '0.8rem', margin: 0 }}>{pincodeError}</p>}
+                        
+                        {authError && <p style={{ color: '#ff4d4f', fontSize: '0.8rem', margin: 0 }}>{authError}</p>}
 
-                      {/* Clean static Normal Delivery Info Block */}
-                      <div style={{
-                        border: '1px solid var(--border-light)',
-                        background: 'var(--bg-secondary)',
-                        borderRadius: '6px',
-                        padding: '12px 16px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}>
-                        <div>
-                          <span style={{ color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600, display: 'block' }}>Normal Delivery</span>
-                          <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px', display: 'block' }}>
-                            Ships via Shiprocket. Est. Delivery: <strong>within 15 days from ordered date</strong>
-                          </span>
-                        </div>
-                        <span style={{ fontSize: '0.95rem', color: 'var(--gold-primary)', fontWeight: 700 }}>
-                          {shippingCost === 0 ? 'FREE' : `₹ ${shippingCost}`}
-                        </span>
-                      </div>
-
-                      {/* Coupon input */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Have a Coupon Code?</label>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <input 
-                            type="text" 
-                            value={couponInput} 
-                            onChange={e => setCouponInput(e.target.value)} 
-                            placeholder="e.g. FESTIVE20" 
-                            style={{ flex: 1, padding: '10px', border: '1px solid var(--border-light)', borderRadius: '4px', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', textTransform: 'uppercase' }}
-                          />
-                          <button 
-                            type="button" 
-                            onClick={handleApplyCoupon} 
-                            className="gold-button" 
-                            style={{ padding: '10px 16px', fontSize: '0.8rem' }}
-                          >
-                            Apply
-                          </button>
-                        </div>
-                        {couponError && <p style={{ color: '#ff4d4f', fontSize: '0.75rem', margin: '2px 0 0' }}>{couponError}</p>}
-                        {appliedCoupon && <p style={{ color: '#2ecc71', fontSize: '0.75rem', margin: '2px 0 0', fontWeight: 500 }}>Coupon "{appliedCoupon.code}" applied successfully!</p>}
-                      </div>
-
-                      {/* Summary row */}
-                      {shippingThresholdBanner}
-                      <div style={{ padding: '12px 14px', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', fontSize: '0.85rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: 'var(--text-secondary)' }}>
-                          <span>Subtotal ({cart.length} items)</span>
-                          <span>₹ {subtotal}</span>
-                        </div>
-                        {discountAmount > 0 && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: '#2ecc71' }}>
-                            <span>{discountLabel}</span>
-                            <span>-₹ {discountAmount}</span>
+                        <button type="submit" className="gold-button" disabled={processing} style={{ width: '100%', padding: '14px', marginTop: '10px' }}>
+                          {processing ? "Verifying..." : "Verify Code & Proceed"}
+                        </button>
+                        <button type="button" onClick={() => setShowRegOtp(false)} className="text-button" style={{ width: '100%', textAlign: 'center', fontSize: '0.85rem', marginTop: '8px', color: 'var(--text-secondary)', cursor: 'pointer', background: 'none', border: 'none' }}>
+                          Back to Shipping Info
+                        </button>
+                      </form>
+                    ) : (
+                      <form onSubmit={handleShippingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        {currentUser && (
+                          <div style={{
+                            backgroundColor: 'rgba(46, 204, 113, 0.06)',
+                            border: '1px solid rgba(46, 204, 113, 0.2)',
+                            borderRadius: '6px',
+                            padding: '10px 14px',
+                            fontSize: '0.82rem',
+                            color: '#27ae60',
+                            marginTop: '4px',
+                            fontWeight: 500
+                          }}>
+                            Logged in as <strong>{currentUser.name}</strong>. Shipping details pre-filled.
                           </div>
                         )}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-primary)', fontWeight: 600 }}>
-                          <span>Estimated Total (excl. courier)</span>
-                          <span>₹ {cartTotal}</span>
-                        </div>
-                      </div>
 
-                      <button type="submit" className="gold-button" style={{ width: '100%', padding: '14px', position: 'sticky', bottom: 0, zIndex: 2, marginTop: '8px' }}>
-                        Proceed to Payment Options
-                      </button>
-                    </form>
+                        <div className="form-two-columns" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                          <div className="input-group">
+                            <label>Contact Name</label>
+                            <input type="text" required value={name} onChange={e => setName(e.target.value)} placeholder="Enter full name" />
+                          </div>
+                          <div className="input-group">
+                            <label>Mobile Number</label>
+                            <input type="tel" required maxLength={10} pattern="[6-9][0-9]{9}" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ''))} placeholder="Enter 10-digit mobile" />
+                          </div>
+                        </div>
+
+                        <div className="input-group">
+                          <label>Email ID</label>
+                          <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="customer@domain.com" />
+                        </div>
+
+                        {!currentUser && (
+                          <div className="input-group">
+                            <label>Choose Account Password * (For order tracking & future logins)</label>
+                            <input 
+                              type="password" 
+                              required 
+                              minLength={8}
+                              pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?&quot;:{}|<>]).{8,}"
+                              title="Min 8 chars with uppercase, lowercase, number, and special character"
+                              value={regPassword} 
+                              onChange={e => setRegPassword(e.target.value)} 
+                              placeholder="Create a secure password" 
+                            />
+                          </div>
+                        )}
+
+                        <div className="input-group">
+                          <label>Street Address / House No.</label>
+                          <input type="text" required value={address} onChange={e => setAddress(e.target.value)} placeholder="Apt name, block number, street details" />
+                        </div>
+
+                        <div className="form-three-columns" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                          <div className="input-group">
+                            <label>City</label>
+                            <input type="text" required value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Mumbai" />
+                          </div>
+                          <div className="input-group">
+                            <label>State</label>
+                            <input type="text" required value={state} onChange={e => setState(e.target.value)} placeholder="e.g. Delhi" />
+                          </div>
+                          <div className="input-group">
+                            <label>PIN Code</label>
+                            <input 
+                              type="text" 
+                              maxLength={6} 
+                              required 
+                              value={pincode} 
+                              onChange={e => setPincode(e.target.value.replace(/\D/g, ''))} 
+                              placeholder="110001" 
+                            />
+                          </div>
+                        </div>
+                        {pincodeError && <p style={{ color: '#ff4d4f', fontSize: '0.8rem', margin: 0 }}>{pincodeError}</p>}
+
+                        {/* Clean static Normal Delivery Info Block */}
+                        <div style={{
+                          border: '1px solid var(--border-light)',
+                          background: 'var(--bg-secondary)',
+                          borderRadius: '6px',
+                          padding: '12px 16px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <div>
+                            <span style={{ color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600, display: 'block' }}>Normal Delivery</span>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px', display: 'block' }}>
+                              Ships via Shiprocket. Est. Delivery: <strong>within 15 days from ordered date</strong>
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.95rem', color: 'var(--gold-primary)', fontWeight: 700 }}>
+                            {shippingCost === 0 ? 'FREE' : `₹ ${shippingCost}`}
+                          </span>
+                        </div>
+
+                        {/* Coupon input */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Have a Coupon Code?</label>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <input 
+                              type="text" 
+                              value={couponInput} 
+                              onChange={e => setCouponInput(e.target.value)} 
+                              placeholder="e.g. FESTIVE20" 
+                              style={{ flex: 1, padding: '10px', border: '1px solid var(--border-light)', borderRadius: '4px', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', textTransform: 'uppercase' }}
+                            />
+                            <button 
+                              type="button" 
+                              onClick={handleApplyCoupon} 
+                              className="gold-button" 
+                              style={{ padding: '10px 16px', fontSize: '0.8rem' }}
+                            >
+                              Apply
+                            </button>
+                          </div>
+                          {couponError && <p style={{ color: '#ff4d4f', fontSize: '0.75rem', margin: '2px 0 0' }}>{couponError}</p>}
+                          {appliedCoupon && <p style={{ color: '#2ecc71', fontSize: '0.75rem', margin: '2px 0 0', fontWeight: 500 }}>Coupon "{appliedCoupon.code}" applied successfully!</p>}
+                        </div>
+
+                        {/* Summary row */}
+                        {shippingThresholdBanner}
+                        <div style={{ padding: '12px 14px', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', fontSize: '0.85rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: 'var(--text-secondary)' }}>
+                            <span>Subtotal ({cart.length} items)</span>
+                            <span>₹ {subtotal}</span>
+                          </div>
+                          {discountAmount > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: '#2ecc71' }}>
+                              <span>{discountLabel}</span>
+                              <span>-₹ {discountAmount}</span>
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-primary)', fontWeight: 600 }}>
+                            <span>Estimated Total (excl. courier)</span>
+                            <span>₹ {cartTotal}</span>
+                          </div>
+                        </div>
+
+                        <button type="submit" className="gold-button" disabled={processing} style={{ width: '100%', padding: '14px', position: 'sticky', bottom: 0, zIndex: 2, marginTop: '8px' }}>
+                          {processing ? "Sending Verification..." : "Proceed to Payment Options"}
+                        </button>
+                      </form>
+                    )
                   )}
                 </div>
               )}

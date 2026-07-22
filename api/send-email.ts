@@ -451,6 +451,133 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ success: true, message: 'Delivery update email dispatched successfully' });
     }
 
+    if (type === 'verification') {
+      const { name, email, code } = payload;
+      if (!email || !name || !code) {
+        return res.status(400).json({ error: 'Missing name, email, or code for verification.' });
+      }
+
+      const subject = `${code} is your Maa Diaries verification code`;
+      const html = `
+        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; background-color: #fff;">
+          <div style="background-color: #b08d57; padding: 30px 20px; text-align: center; color: #fff;">
+            <h1 style="margin: 0; font-family: Georgia, serif; font-size: 28px; font-weight: 300; letter-spacing: 2px;">MAA DIARIES</h1>
+            <p style="margin: 5px 0 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Aapki pasand hamari pehchaan</p>
+          </div>
+          <div style="padding: 30px 20px; line-height: 1.6; color: #444;">
+            <h2 style="color: #333; font-family: Georgia, serif; font-weight: 300; font-size: 20px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;">Confirm Your Email Address</h2>
+            <p>Dear <strong>${escapeHtml(name)}</strong>,</p>
+            <p>Thank you for signing up with Maa Diaries! To complete your registration and secure your account, please enter the following 6-digit verification code on the website:</p>
+            
+            <div style="background-color: #faf7f2; border: 1px dashed #b08d57; border-radius: 6px; padding: 20px; margin: 25px 0; text-align: center;">
+              <span style="font-family: monospace; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #b08d57;">${escapeHtml(code)}</span>
+            </div>
+
+            <p style="font-size: 13px; color: #666;">This verification code is valid for 15 minutes. If you did not request this code, please ignore this email.</p>
+            
+            <p style="margin-top: 35px; font-size: 13px; color: #888; text-align: center; border-top: 1px dashed #eaeaea; padding-top: 20px;">
+              D-16, Part 1, Chanakya Place, 40 Feet Road, Opp. Gurudwara, New Delhi - 110059
+            </p>
+          </div>
+        </div>
+      `;
+
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: `Maa Diaries <${supportEmail}>`,
+          to: email,
+          subject,
+          html,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Resend API call failed: ${errorText}`);
+      }
+
+      return res.status(200).json({ success: true, message: 'Verification email dispatched successfully' });
+    }
+
+    if (type === 'reset_password') {
+      const { email, origin } = payload;
+      if (!email) {
+        return res.status(400).json({ error: 'Missing email for password reset.' });
+      }
+      if (!supabaseAdmin) {
+        return res.status(500).json({ error: 'Supabase configuration is missing or incomplete.' });
+      }
+
+      // Generate the recovery link via Supabase Auth Admin API
+      const redirectTo = `${origin || allowedOrigin}/account`;
+      const { data, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'recovery',
+        email,
+        options: {
+          redirectTo
+        }
+      });
+
+      if (linkError) {
+        return res.status(400).json({ error: linkError.message });
+      }
+
+      const resetLink = data.properties.action_link;
+      const subject = `Reset your Maa Diaries password`;
+      const html = `
+        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; background-color: #fff;">
+          <div style="background-color: #b08d57; padding: 30px 20px; text-align: center; color: #fff;">
+            <h1 style="margin: 0; font-family: Georgia, serif; font-size: 28px; font-weight: 300; letter-spacing: 2px;">MAA DIARIES</h1>
+            <p style="margin: 5px 0 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Aapki pasand hamari pehchaan</p>
+          </div>
+          <div style="padding: 30px 20px; line-height: 1.6; color: #444;">
+            <h2 style="color: #333; font-family: Georgia, serif; font-weight: 300; font-size: 20px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;">Reset Your Password</h2>
+            <p>Hello,</p>
+            <p>We received a request to reset the password for your Maa Diaries account. You can reset your password by clicking the premium link below:</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetLink}" style="background-color: #b08d57; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Reset Password</a>
+            </div>
+
+            <p>If the button above does not work, copy and paste this URL into your browser:</p>
+            <p style="word-break: break-all; font-size: 13px; color: #b08d57;">${resetLink}</p>
+
+            <p style="font-size: 13px; color: #666; margin-top: 20px;">If you did not request a password reset, please ignore this email. Your password will remain unchanged.</p>
+            
+            <p style="margin-top: 35px; font-size: 13px; color: #888; text-align: center; border-top: 1px dashed #eaeaea; padding-top: 20px;">
+              D-16, Part 1, Chanakya Place, 40 Feet Road, Opp. Gurudwara, New Delhi - 110059
+            </p>
+          </div>
+        </div>
+      `;
+
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: `Maa Diaries <${supportEmail}>`,
+          to: email,
+          subject,
+          html,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Resend API call failed: ${errorText}`);
+      }
+
+      return res.status(200).json({ success: true, message: 'Password reset link sent to your email.' });
+    }
+
     if (type === 'welcome') {
       const { name, email } = payload;
       if (!email || !name) {
