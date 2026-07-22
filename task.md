@@ -1,0 +1,6 @@
+- [ ] Add validation in `submitProductReview` to ensure product exists and log warning if not.
+- [ ] Create migration script `src/scripts/migrate_static_reviews.ts` (already created).
+- [ ] Run migration script to insert static reviews.
+- [ ] Verify Admin Portal shows the three reviews.
+- [ ] Test submitting a new review and confirm it appears in Admin Portal.
+- [ ] (Optional) Add a flag column `is_static` to `product_reviews` if needed (schema change not required now).

@@ -577,6 +577,106 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ success: true, message: 'Password reset link sent to your email.' });
     }
 
+    if (type === 'feedback') {
+      const { name, email, phone, message, orderId } = payload;
+      if (!name || !email || !message) {
+        return res.status(400).json({ error: 'Missing feedback fields.' });
+      }
+
+      const subject = `New Customer Feedback / Inquiry from ${name}`;
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; background-color: #fff;">
+          <div style="background-color: #b08d57; padding: 20px; text-align: center; color: #fff;">
+            <h1 style="margin: 0; font-family: Georgia, serif; font-size: 24px; font-weight: 300;">Maa Diaries Feedback</h1>
+          </div>
+          <div style="padding: 20px; line-height: 1.6; color: #444;">
+            <h2 style="color: #333; font-size: 18px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;">Inquiry Details</h2>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <tr><td style="padding: 6px 0; color: #666; width: 120px;">Customer Name:</td><td><strong>${escapeHtml(name)}</strong></td></tr>
+              <tr><td style="padding: 6px 0; color: #666;">Email Address:</td><td><strong>${escapeHtml(email)}</strong></td></tr>
+              <tr><td style="padding: 6px 0; color: #666;">Phone Number:</td><td><strong>${escapeHtml(phone || 'N/A')}</strong></td></tr>
+              ${orderId ? `<tr><td style="padding: 6px 0; color: #666;">Related Order ID:</td><td><strong>${escapeHtml(orderId)}</strong></td></tr>` : ''}
+            </table>
+            <div style="background-color: #faf7f2; border: 1px solid #f3ebd8; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0 0 8px 0; font-weight: bold; color: #b08d57;">Message:</p>
+              <p style="margin: 0; white-space: pre-wrap; font-style: italic;">"${escapeHtml(message)}"</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: `Maa Diaries Desk <${infoEmail}>`,
+          to: 'founder@maadiaries.com',
+          subject,
+          html,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Resend API call failed for feedback: ${errorText}`);
+      }
+
+      return res.status(200).json({ success: true, message: 'Feedback email dispatched successfully' });
+    }
+
+    if (type === 'review') {
+      const { productName, userName, rating, comment } = payload;
+      if (!productName || !userName || !comment) {
+        return res.status(400).json({ error: 'Missing review fields.' });
+      }
+
+      const subject = `New Product Review: ${productName} (${rating} Stars)`;
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; background-color: #fff;">
+          <div style="background-color: #b08d57; padding: 20px; text-align: center; color: #fff;">
+            <h1 style="margin: 0; font-family: Georgia, serif; font-size: 24px; font-weight: 300;">New Review Notification</h1>
+          </div>
+          <div style="padding: 20px; line-height: 1.6; color: #444;">
+            <h2 style="color: #333; font-size: 18px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;">Review Details</h2>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <tr><td style="padding: 6px 0; color: #666; width: 120px;">Product:</td><td><strong>${escapeHtml(productName)}</strong></td></tr>
+              <tr><td style="padding: 6px 0; color: #666;">Customer Name:</td><td><strong>${escapeHtml(userName)}</strong></td></tr>
+              <tr><td style="padding: 6px 0; color: #666;">Rating:</td><td><strong style="color: #f1c40f;">${'★'.repeat(rating)}${'☆'.repeat(5 - rating)}</strong> (${rating}/5)</td></tr>
+            </table>
+            <div style="background-color: #faf7f2; border: 1px solid #f3ebd8; border-radius: 6px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0 0 8px 0; font-weight: bold; color: #b08d57;">Review Comment:</p>
+              <p style="margin: 0; white-space: pre-wrap; font-style: italic;">"${escapeHtml(comment)}"</p>
+            </div>
+            <p style="font-size: 13px; color: #666;">You can reply to this review directly inside the Maa Diaries Admin Portal.</p>
+          </div>
+        </div>
+      `;
+
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: `Maa Diaries Store <${infoEmail}>`,
+          to: 'founder@maadiaries.com',
+          subject,
+          html,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Resend API call failed for review notification: ${errorText}`);
+      }
+
+      return res.status(200).json({ success: true, message: 'Review email dispatched successfully' });
+    }
+
     if (type === 'welcome') {
       const { name, email } = payload;
       if (!email || !name) {
