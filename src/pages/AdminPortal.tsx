@@ -75,6 +75,15 @@ export const AdminPortal: React.FC = () => {
   const [isSavingHomepage, setIsSavingHomepage] = useState(false);
 
   // Home categories manager
+  const defaultHomeCategories = [
+    { id: 'earrings', name: 'Earrings', desc: 'Western & Traditional', image: 'https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=400&q=80' },
+    { id: 'necklaces', name: 'Necklaces', desc: 'Chains & Chokers', image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=400&q=80' },
+    { id: 'bracelets', name: 'Bracelets', desc: 'Delicate wristwear', image: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=400&q=80' },
+    { id: 'pendants', name: 'Pendants', desc: 'Minimalist statement charms', image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=400&q=80' },
+    { id: 'payals', name: 'Payals', desc: 'Elegant traditional anklets', image: 'https://images.unsplash.com/photo-1543294001-f7cd5d7fb516?auto=format&fit=crop&w=400&q=80' },
+    { id: 'kashmiri_jhumke', name: 'Kashmiri Jhumke', desc: 'Intricate royal bells', image: 'https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=400&q=80' },
+    { id: 'hair_accessories', name: 'Hair Accessories', desc: 'Clutchers & Scrunchies', image: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=400&q=80' }
+  ];
   const [homeCategories, setHomeCategories] = useState(siteSettings.homeCategories || []);
   const [newCatName, setNewCatName] = useState('');
   const [newCatDesc, setNewCatDesc] = useState('');
@@ -2116,8 +2125,25 @@ export const AdminPortal: React.FC = () => {
               <h4 style={{ fontSize: '1.1rem', fontFamily: 'var(--font-serif)', color: 'var(--gold-primary)' }}>Shop By Category Cards</h4>
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-              Add new category cards to the home page. Each card needs a name, short description, and image URL.
+              The 7 default categories are always shown on the home page. Add extra category cards below to extend the home page.
             </p>
+
+            {/* Built-in Default Categories */}
+            <div style={{ marginBottom: '20px' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Built-in Categories (always shown)</span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px', marginTop: '10px' }}>
+                {defaultHomeCategories.map((cat) => (
+                  <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', border: '1px solid var(--border-light)', borderRadius: '8px', backgroundColor: 'var(--bg-secondary)', opacity: 0.8 }}>
+                    <img src={cat.image} alt="" style={{ width: '48px', height: '48px', borderRadius: '6px', objectFit: 'cover', border: '1px solid var(--border-light)' }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</span>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{cat.desc}</span>
+                    </div>
+                    <span style={{ fontSize: '0.62rem', color: 'var(--gold-primary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0, padding: '2px 6px', border: '1px solid var(--gold-primary)', borderRadius: '4px' }}>Built-in</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.5fr auto', gap: '10px', alignItems: 'end', marginBottom: '16px' }}>
               <div>
@@ -2172,7 +2198,7 @@ export const AdminPortal: React.FC = () => {
               </div>
             ) : (
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', padding: '20px 0', fontStyle: 'italic' }}>
-                No custom categories added. Default categories will be shown on the home page.
+                No extra custom categories added. The 7 default categories above are always shown on the home page.
               </p>
             )}
           </div>

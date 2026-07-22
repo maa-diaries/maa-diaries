@@ -204,9 +204,10 @@ export const Home: React.FC = () => {
     }
   };
 
-  const categories = siteSettings.homeCategories && siteSettings.homeCategories.length > 0
+  const customHomeCategories = siteSettings.homeCategories && siteSettings.homeCategories.length > 0
     ? siteSettings.homeCategories.map(c => ({ id: c.id, name: c.name, desc: c.desc, image: c.image }))
-    : defaultCategories;
+    : [];
+  const categories = [...defaultCategories, ...customHomeCategories.filter(c => !defaultCategories.some(d => d.id === c.id))];
 
   // Filtering products — use admin-selected IDs or fall back to defaults
   const newArrivals = siteSettings.homeNewArrivals.length > 0
@@ -228,7 +229,7 @@ export const Home: React.FC = () => {
 
   const handleCategoryClick = (catId: string) => {
     setShopCategory(catId);
-    navigate('/shop');
+    navigate(`/shop/${catId.replace(/_/g, '-')}`);
   };
 
   return (
