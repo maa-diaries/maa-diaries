@@ -59,8 +59,8 @@ export default async function handler(req: any, res: any) {
   // ─── Email Address Configuration ───────────────────────────────
   // Each email type uses a dedicated sender/recipient for proper routing
   const infoEmail = process.env.INFO_EMAIL || 'info@maadiaries.com';
-  const ordersEmail = process.env.ORDERS_EMAIL || 'orders@maadiaries.com';
-  const deliveryEmail = process.env.DELIVERY_EMAIL || 'deliveryupdate@maadiaries.com';
+  const ordersEmail = process.env.ORDERS_EMAIL || 'support@maadiaries.com';
+  const deliveryEmail = process.env.DELIVERY_EMAIL || 'support@maadiaries.com';
   const supportEmail = process.env.SUPPORT_EMAIL || 'support@maadiaries.com';
 
   try {

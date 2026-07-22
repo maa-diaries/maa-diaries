@@ -462,7 +462,7 @@ export const AdminPortal: React.FC = () => {
         const trackingVal = inspectingOrder?.id === orderId ? (modalTrackingNum || order.trackingNumber) : order.trackingNumber;
         const estDeliveryVal = inspectingOrder?.id === orderId ? (modalEstDelivery || order.estimatedDelivery) : order.estimatedDelivery;
 
-        // Send real delivery update email via Resend (FROM: deliveryupdate@maadiaries.com)
+        // Send real delivery update email via Resend (FROM: support@maadiaries.com)
         await sendEmailViaResend('delivery_update', {
           order: {
             id: order.id,
