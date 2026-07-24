@@ -96,7 +96,7 @@ const mapProduct = (row: any): Product => ({
     finish: ''
   },
   isFeatured: Boolean(row.is_featured),
-  stock: typeof row.stock === 'number' ? row.stock : 10,
+  stock: (typeof row.stock === 'number' && row.stock > 0) ? row.stock : 10,
   sku: row.sku || undefined
 });
 
