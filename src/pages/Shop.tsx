@@ -24,7 +24,7 @@ export const Shop: React.FC = () => {
 
   const [priceRange, setPriceRange] = useState<number>(() => {
     const p = searchParams.get('price');
-    return p ? Math.min(Math.max(parseInt(p, 10), 500), 5000) : 5000;
+    return p ? Math.min(Math.max(parseInt(p, 10), 500), 4000) : 4000;
   });
   const [sortBy, setSortBy] = useState<string>(() => searchParams.get('sort') || 'relevance');
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
@@ -53,7 +53,7 @@ export const Shop: React.FC = () => {
   useEffect(() => {
     const params: Record<string, string> = {};
     if (searchQuery) params.q = searchQuery;
-    if (priceRange < 5000) params.price = String(priceRange);
+    if (priceRange < 4000) params.price = String(priceRange);
     if (sortBy !== 'relevance') params.sort = sortBy;
     setSearchParams(params, { replace: true });
   }, [searchQuery, priceRange, sortBy, setSearchParams]);
@@ -160,7 +160,7 @@ export const Shop: React.FC = () => {
           <button
             key={cat.id}
             onClick={() => {
-              const suffix = searchQuery || priceRange < 5000 || sortBy !== 'relevance' ? `?${searchParams.toString()}` : '';
+              const suffix = searchQuery || priceRange < 4000 || sortBy !== 'relevance' ? `?${searchParams.toString()}` : '';
               if (cat.id === 'all') {
                 navigate(`/shop${suffix}`);
               } else {
@@ -207,7 +207,7 @@ export const Shop: React.FC = () => {
           <input 
             type="range"
             min={500}
-            max={5000}
+            max={4000}
             step={100}
             value={priceRange}
             onChange={(e) => setPriceRange(parseInt(e.target.value))}
@@ -215,7 +215,7 @@ export const Shop: React.FC = () => {
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
             <span>₹500</span>
-            <span>₹5,000+</span>
+            <span>₹4,000+</span>
           </div>
         </div>
 
@@ -277,7 +277,7 @@ export const Shop: React.FC = () => {
           <button
             onClick={() => {
               setSearchQuery('');
-              setPriceRange(5000);
+              setPriceRange(4000);
               setShopCategory('all');
             }}
             className="gold-button"
