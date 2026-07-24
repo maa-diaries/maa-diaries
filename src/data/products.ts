@@ -45,7 +45,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: '100% Waterproof & Sweatproof',
       finish: 'High Polish Silver / Rose Gold'
     },
-    isFeatured: true
+    isFeatured: true,
+    stock: 10
   },
   {
     id: 'earring-02',
@@ -66,7 +67,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Sweat Resistant & Hypoallergenic',
       finish: 'Matte Antique Gold Finish'
     },
-    isFeatured: true
+    isFeatured: true,
+    stock: 10
   },
   {
     id: 'earring-03',
@@ -87,7 +89,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Water-Safe Daily Wear',
       finish: 'Mirror Platinum Finish'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
   {
     id: 'earring-04',
@@ -108,7 +111,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Sweatproof Protection',
       finish: 'High Polish Gold Sheen'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
 
   // --- KASHMIRI JHUMKE (4) ---
@@ -130,7 +134,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Waterproof protective layer',
       finish: 'Textured Kashmiri Polish'
     },
-    isFeatured: true
+    isFeatured: true,
+    stock: 10
   },
   {
     id: 'jhumke-02',
@@ -150,7 +155,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Sweat Resistant',
       finish: 'Imperial Matte Antique Finish'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
   {
     id: 'jhumke-03',
@@ -170,7 +176,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Waterproof & Sweatproof',
       finish: 'Brushed Charcoal Matte Polish'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
   {
     id: 'jhumke-04',
@@ -190,7 +197,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Sweat Resistant Coating',
       finish: 'Smooth Glossy Gold'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
 
   // --- NECKLACES (4) ---
@@ -212,7 +220,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Showerproof, Gym-proof, Ocean-proof',
       finish: 'Mirror Platinum Finish'
     },
-    isFeatured: true
+    isFeatured: true,
+    stock: 10
   },
   {
     id: 'necklace-02',
@@ -232,7 +241,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Sweat Resistant',
       finish: 'Imperial Gold Polish'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
   {
     id: 'necklace-03',
@@ -252,7 +262,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: '100% Shower & Gym Safe',
       finish: 'Smooth Flat Polish'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
   {
     id: 'necklace-04',
@@ -272,7 +283,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Daily Wear Protection',
       finish: 'Natural Mother-of-Pearl Gloss'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
 
   // --- PENDANTS (4) ---
@@ -294,7 +306,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Daily Wear Resistant',
       finish: 'High Gloss Polishing'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
   {
     id: 'pendant-02',
@@ -314,7 +327,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Water Resistant Protection',
       finish: 'High Shine Polish'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
   {
     id: 'pendant-03',
@@ -334,7 +348,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Waterproof & Sweatproof',
       finish: 'Gold Satin Brushed Finish'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
   {
     id: 'pendant-04',
@@ -354,7 +369,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Showerproof Daily Wear',
       finish: 'Detailed High-Polish Relief'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
 
   // --- BRACELETS (4) ---
@@ -376,7 +392,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Waterproof & Fade-Resistant',
       finish: 'Brilliant Jewelry Polish'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
   {
     id: 'bracelet-02',
@@ -396,7 +413,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Fully Waterproof & Shower-Safe',
       finish: 'Mirror Gold Polish'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
   {
     id: 'bracelet-03',
@@ -416,7 +434,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Gym, Ocean, and Shower Proof',
       finish: 'High Shine Polish'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
   {
     id: 'bracelet-04',
@@ -436,7 +455,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Sweat Resistant Coating',
       finish: 'Distressed Matte Antique Gold'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
 
   // --- PAYALS (4) ---
@@ -458,7 +478,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Waterproof Anklets',
       finish: 'Traditional Indian Silver Finish'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
   {
     id: 'payal-02',
@@ -478,7 +499,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Festival Wear Resistant',
       finish: 'Chiseled Antique Silver Finish'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
   {
     id: 'payal-03',
@@ -498,7 +520,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Ocean & Pool waterproof',
       finish: 'Polished Smooth Silver'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
   {
     id: 'payal-04',
@@ -518,7 +541,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Bridal Occasions Wear',
       finish: 'Bright Royal Gold Finish'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
 
   // --- HAIR ACCESSORIES (4) ---
@@ -541,7 +565,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Daily Wear Heavy Duty Spring',
       finish: 'Polished Metallic Gold'
     },
-    isFeatured: true
+    isFeatured: true,
+    stock: 10
   },
   {
     id: 'hair-02',
@@ -562,7 +587,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Hand Washable / Gentle stretch',
       finish: 'Satin Silk Sheen'
     },
-    isFeatured: true
+    isFeatured: true,
+    stock: 10
   },
   {
     id: 'hair-03',
@@ -583,7 +609,8 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Flexible / Reuseable',
       finish: 'Polished Yellow Gold Wire'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   },
   {
     id: 'hair-04',
@@ -604,6 +631,7 @@ export const INITIAL_PRODUCTS: Product[] = [
       durability: 'Heavy-Duty Grip Spring',
       finish: 'Bright Silver / Gold Plating'
     },
-    isFeatured: false
+    isFeatured: false,
+    stock: 10
   }
 ];

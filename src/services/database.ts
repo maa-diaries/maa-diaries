@@ -95,9 +95,9 @@ const mapProduct = (row: any): Product => ({
     durability: '',
     finish: ''
   },
-  isFeatured: Boolean(row.is_featured)
-  ,stock: typeof row.stock === 'number' ? row.stock : undefined
-  ,sku: row.sku || undefined
+  isFeatured: Boolean(row.is_featured),
+  stock: typeof row.stock === 'number' ? row.stock : 10,
+  sku: row.sku || undefined
 });
 
 const mapOrder = (row: any): Order => ({
@@ -178,7 +178,8 @@ export const databaseService = {
         metal_options: p.metalOptions,
         stone_options: p.stoneOptions,
         specs: p.specs,
-        is_featured: p.isFeatured || false
+        is_featured: p.isFeatured || false,
+        stock: p.stock ?? 10
       }));
       const { data, error } = await supabase
         .from('products')
