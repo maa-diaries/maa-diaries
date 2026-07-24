@@ -141,15 +141,11 @@ export const MyAccount: React.FC = () => {
       return;
     }
 
-    // Password complexity check
-    const minLength = 8;
-    const hasUppercase = /[A-Z]/.test(regPassword);
-    const hasLowercase = /[a-z]/.test(regPassword);
-    const hasDigit = /\d/.test(regPassword);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(regPassword);
+    // Password length check
+    const minLength = 6;
     
-    if (regPassword.length < minLength || !hasUppercase || !hasLowercase || !hasDigit || !hasSpecial) {
-      setError("Password must be at least 8 characters long and include: one uppercase letter, one lowercase letter, one number, and one special character.");
+    if (regPassword.length < minLength) {
+      setError("Password must be at least 6 characters long.");
       return;
     }
 
@@ -355,9 +351,9 @@ export const MyAccount: React.FC = () => {
                     placeholder="Create password" 
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
-                    minLength={8}
-                    pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?&quot;:{}|<>]).{8,}"
-                    title="Min 8 chars with uppercase, lowercase, number, and special character"
+                    minLength={6}
+                    pattern=".{6,}"
+                    title="At least 6 characters"
                     style={{ width: '100%', height: '40px', padding: '0 12px', fontSize: '0.9rem', border: '1px solid var(--border-light)', borderRadius: '4px' }}
                   />
                 </div>

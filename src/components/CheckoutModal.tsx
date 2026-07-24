@@ -333,15 +333,11 @@ export const CheckoutModal: React.FC = () => {
         return;
       }
 
-      // Password complexity check
-      const minLength = 8;
-      const hasUppercase = /[A-Z]/.test(regPassword);
-      const hasLowercase = /[a-z]/.test(regPassword);
-      const hasDigit = /\d/.test(regPassword);
-      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(regPassword);
+      // Password length check
+      const minLength = 6;
 
-      if (regPassword.length < minLength || !hasUppercase || !hasLowercase || !hasDigit || !hasSpecial) {
-        setAuthError("Password must be at least 8 characters long and include: one uppercase letter, one lowercase letter, one number, and one special character.");
+      if (regPassword.length < minLength) {
+        setAuthError("Password must be at least 6 characters long.");
         return;
       }
       
@@ -911,12 +907,12 @@ For support WhatsApp +${siteSettings.whatsapp}
                             <input 
                               type="password" 
                               required 
-                              minLength={8}
-                              pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?&quot;:{}|<>]).{8,}"
-                              title="Min 8 chars with uppercase, lowercase, number, and special character"
+                              minLength={6}
+                              pattern=".{6,}"
+                              title="At least 6 characters"
                               value={regPassword} 
                               onChange={e => setRegPassword(e.target.value)} 
-                              placeholder="Create a secure password" 
+                              placeholder="Create a password" 
                             />
                           </div>
                         )}

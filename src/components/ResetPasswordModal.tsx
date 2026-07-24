@@ -32,15 +32,11 @@ export const ResetPasswordModal: React.FC = () => {
       return;
     }
 
-    // Password complexity check
-    const minLength = 8;
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasLowercase = /[a-z]/.test(password);
-    const hasDigit = /\d/.test(password);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    // Password length check
+    const minLength = 6;
     
-    if (password.length < minLength || !hasUppercase || !hasLowercase || !hasDigit || !hasSpecial) {
-      setError("Password must be at least 8 characters long and include: one uppercase letter, one lowercase letter, one number, and one special character.");
+    if (password.length < minLength) {
+      setError("Password must be at least 6 characters long.");
       return;
     }
 
