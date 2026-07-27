@@ -29,7 +29,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://payu.in https://sandbox.payu.in https://test.payu.in; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co https://api.resend.com https://payu.in https://sandbox.payu.in https://test.payu.in; frame-src https://payu.in https://sandbox.payu.in https://test.payu.in; base-uri 'self'; form-action 'self' https://secure.payu.in https://test.payu.in https://sandbox.payu.in"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.payu.in https://payu.in https://sandbox.payu.in https://test.payu.in; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co https://api.resend.com https://*.payu.in https://payu.in https://sandbox.payu.in https://test.payu.in; frame-src 'self' https://*.payu.in https://payu.in https://sandbox.payu.in https://test.payu.in; base-uri 'self'; form-action 'self' https://*.payu.in https://payu.in https://secure.payu.in https://test.payu.in https://sandbox.payu.in https:"
         }
       ]
     }
