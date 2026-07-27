@@ -482,7 +482,7 @@ export const CheckoutModal: React.FC = () => {
         const fields: Record<string, string> = {
           key: resData.payuKey,
           txnid: resData.txnid,
-          amount: resData.amount.toString(),
+          amount: resData.amount,
           productinfo: resData.productinfo,
           firstname: resData.firstname,
           email: resData.email,
@@ -490,7 +490,7 @@ export const CheckoutModal: React.FC = () => {
           surl: resData.surl,
           furl: resData.furl,
           hash: resData.hash,
-          udf1: pendingOrder.id
+          udf1: resData.udf1 || pendingOrder.id
         };
 
         for (const [fieldName, fieldValue] of Object.entries(fields)) {
