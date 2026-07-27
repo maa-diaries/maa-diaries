@@ -151,13 +151,7 @@ export const databaseService = {
       .order('name', { ascending: true });
     
     if (error) throw error;
-    if (data && data.length > 0) {
-      return data.map(mapProduct);
-    }
-    
-    // Seed if table is empty
-    const seeded = await this.seedProducts();
-    return seeded;
+    return (data || []).map(mapProduct);
   },
 
   async seedProducts(): Promise<Product[]> {
