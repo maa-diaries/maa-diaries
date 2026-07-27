@@ -560,20 +560,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     refreshMedia();
     refreshEmailLogs();
     
-    // Load cart/wishlist from localStorage
+    // Clean up any legacy localStorage cache on mount to free browser storage
     try {
-      const savedCart = localStorage.getItem('md_cart');
-      if (savedCart) setCart(JSON.parse(savedCart));
-    } catch {
-      setCart([]);
-    }
-    
-    try {
-      const savedWish = localStorage.getItem('md_wishlist');
-      if (savedWish) setWishlist(JSON.parse(savedWish));
-    } catch {
-      setWishlist([]);
-    }
+      localStorage.removeItem('md_cart');
+      localStorage.removeItem('md_wishlist');
+      localStorage.removeItem('md_current_user_v1');
+      localStorage.removeItem('md_site_settings');
+      localStorage.removeItem('md_site_settings_v1');
+    } catch (e) {}
   }, []);
 
   // Auto-refresh data when tab regains focus (user returns from admin panel or another tab)
@@ -589,37 +583,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
-
-  // Save cart/wishlist to localStorage safely without throwing QuotaExceededError
-  useEffect(() => {
-    try {
-      const minimalCart = cart.map(item => ({
-        key: item.key,
-        product: {
-          id: item.product.id,
-          name: item.product.name,
-          price: item.product.price,
-          image: item.product.image,
-          category: item.product.category
-        },
-        quantity: item.quantity,
-        selectedMetal: item.selectedMetal,
-        selectedStone: item.selectedStone,
-        customEngraving: item.customEngraving
-      }));
-      localStorage.setItem('md_cart', JSON.stringify(minimalCart));
-    } catch (err) {
-      console.warn("Failed to persist cart to localStorage (QuotaExceededError or blocked):", err);
-    }
-  }, [cart]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('md_wishlist', JSON.stringify(wishlist));
-    } catch (err) {
-      console.warn("Failed to persist wishlist to localStorage:", err);
-    }
-  }, [wishlist]);
 
   // Cart operations
   const addToCart = (itemData: Omit<CartItem, 'key'>) => {
