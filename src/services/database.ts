@@ -267,22 +267,39 @@ export const databaseService = {
 
   async deleteProduct(id: string): Promise<void> {
     if (!isSupabaseConfigured) {
-      throw new Error("Supabase is not configured. Cannot delete product.");
+    if (!isSupabaseConfigured) return;
+    try {
+      const res = await fetch('/api/admin-delete-products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (!res.ok) {
+        const { error } = await supabase.from('products').delete().eq('id', id);
+        if (error) throw error;
+      }
+    } catch (e) {
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (error) throw error;
     }
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', id);
-    if (error) throw error;
   },
 
   async deleteAllProducts(): Promise<void> {
     if (!isSupabaseConfigured) return;
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .gte('price', 0);
-    if (error) throw error;
+    try {
+      const res = await fetch('/api/admin-delete-products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ all: true })
+      });
+      if (!res.ok) {
+        const { error } = await supabase.from('products').delete().neq('id', 'non_existent');
+        if (error) throw error;
+      }
+    } catch (e) {
+      const { error } = await supabase.from('products').delete().neq('id', 'non_existent');
+      if (error) throw error;
+    }
   },
 
   // --- Orders API ---
