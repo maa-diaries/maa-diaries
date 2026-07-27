@@ -17,13 +17,21 @@ export const Orders: React.FC = () => {
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
 
-  // Filter orders to only show the current user's orders (admin sees all)
+  // Filter orders to only show the current user's valid orders (admin sees all)
   const userOrders = currentUser
     ? orders.filter(order => {
         const isAdmin = currentUser.email === 'founder@maadiaries.com';
         if (isAdmin) return true;
-        return order.customerEmail.toLowerCase() === currentUser.email.toLowerCase()
+
+        const matchesUser = order.customerEmail.toLowerCase() === currentUser.email.toLowerCase()
           || order.customerPhone === currentUser.phone;
+        if (!matchesUser) return false;
+
+        // Hide unpaid online orders (Pending, Failed, Cancelled) for customers
+        if (order.paymentMethod === 'Online' && order.paymentStatus !== 'Paid') {
+          return false;
+        }
+        return true;
       })
     : [];
 

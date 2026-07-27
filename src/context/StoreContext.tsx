@@ -159,6 +159,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         databaseService.getUserByEmail(data.session.user.email!).then(profile => {
           if (profile) {
             setCurrentUser(profile);
+            if (profile.cart && Array.isArray(profile.cart) && profile.cart.length > 0) {
+              setCart(profile.cart);
+            }
+            if (profile.wishlist && Array.isArray(profile.wishlist) && profile.wishlist.length > 0) {
+              setWishlist(profile.wishlist);
+            }
           } else {
             setCurrentUser(null);
           }
@@ -176,6 +182,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const profile = await databaseService.getUserByEmail(session.user.email!);
         if (profile) {
           setCurrentUser(profile);
+          if (profile.cart && Array.isArray(profile.cart) && profile.cart.length > 0) {
+            setCart(profile.cart);
+          }
+          if (profile.wishlist && Array.isArray(profile.wishlist) && profile.wishlist.length > 0) {
+            setWishlist(profile.wishlist);
+          }
         } else {
           setCurrentUser(null);
         }
@@ -560,6 +572,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     refreshMedia();
     refreshEmailLogs();
     
+    // Restore cart & wishlist from sessionStorage so refresh retains items during session
+    try {
+      const savedSessionCart = sessionStorage.getItem('md_session_cart');
+      if (savedSessionCart) {
+        setCart(JSON.parse(savedSessionCart));
+      }
+      const savedWishlist = sessionStorage.getItem('md_session_wishlist');
+      if (savedWishlist) {
+        setWishlist(JSON.parse(savedWishlist));
+      }
+    } catch (e) {}
+
     // Clean up any legacy localStorage cache on mount to free browser storage
     try {
       localStorage.removeItem('md_cart');
@@ -569,6 +593,50 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.removeItem('md_site_settings_v1');
     } catch (e) {}
   }, []);
+
+  // Save cart to sessionStorage & Supabase for cross-device sync
+  useEffect(() => {
+    try {
+      if (cart.length > 0) {
+        const compactCart = cart.map(item => ({
+          key: item.key,
+          product: {
+            id: item.product.id,
+            name: item.product.name,
+            price: item.product.price,
+            image: item.product.image,
+            category: item.product.category
+          },
+          quantity: item.quantity,
+          selectedMetal: item.selectedMetal,
+          selectedStone: item.selectedStone,
+          customEngraving: item.customEngraving
+        }));
+        sessionStorage.setItem('md_session_cart', JSON.stringify(compactCart));
+      } else {
+        sessionStorage.removeItem('md_session_cart');
+      }
+    } catch (e) {}
+
+    if (currentUser?.email) {
+      databaseService.updateUserCartAndWishlist(currentUser.email, cart, wishlist);
+    }
+  }, [cart, currentUser?.email]);
+
+  // Save wishlist to sessionStorage & Supabase for cross-device sync
+  useEffect(() => {
+    try {
+      if (wishlist.length > 0) {
+        sessionStorage.setItem('md_session_wishlist', JSON.stringify(wishlist));
+      } else {
+        sessionStorage.removeItem('md_session_wishlist');
+      }
+    } catch (e) {}
+
+    if (currentUser?.email) {
+      databaseService.updateUserCartAndWishlist(currentUser.email, cart, wishlist);
+    }
+  }, [wishlist, currentUser?.email]);
 
   // Auto-refresh data when tab regains focus (user returns from admin panel or another tab)
   useEffect(() => {

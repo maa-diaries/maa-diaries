@@ -1455,6 +1455,7 @@ export const AdminPortal: React.FC = () => {
                       <th style={{ padding: '14px 12px', fontWeight: 600 }}>Items Count</th>
                       <th style={{ padding: '14px 12px', fontWeight: 600 }}>Tracking details</th>
                       <th style={{ padding: '14px 12px', fontWeight: 600 }}>Total Amount</th>
+                      <th style={{ padding: '14px 12px', fontWeight: 600 }}>Payment Status</th>
                       <th style={{ padding: '14px 12px', fontWeight: 600 }}>Fulfillment State</th>
                       <th style={{ padding: '14px 12px', textAlign: 'right', fontWeight: 600 }}>Action</th>
                     </tr>
@@ -1479,6 +1480,48 @@ export const AdminPortal: React.FC = () => {
                           )}
                         </td>
                         <td style={{ padding: '14px 12px', color: 'var(--gold-primary)', fontWeight: 600 }}>₹ {o.totalAmount}</td>
+                        <td style={{ padding: '14px 12px' }}>
+                          {o.paymentMethod === 'Online' && o.paymentStatus !== 'Paid' ? (
+                            <span style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              backgroundColor: 'rgba(231, 76, 60, 0.15)',
+                              color: '#e74c3c',
+                              border: '1px solid #e74c3c'
+                            }}>
+                              🔴 FAILED / UNPAID ({o.paymentMethod})
+                            </span>
+                          ) : o.paymentStatus === 'Paid' ? (
+                            <span style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              backgroundColor: 'rgba(46, 204, 113, 0.12)',
+                              color: '#27ae60',
+                              border: '1px solid #27ae60'
+                            }}>
+                              🟢 PAID ({o.paymentMethod})
+                            </span>
+                          ) : (
+                            <span style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              backgroundColor: 'rgba(230, 126, 34, 0.12)',
+                              color: '#e67e22',
+                              border: '1px solid #e67e22'
+                            }}>
+                              🟠 COD ({o.paymentStatus})
+                            </span>
+                          )}
+                        </td>
                         <td style={{ padding: '14px 12px' }}>
                           <span style={{
                             padding: '4px 8px',
@@ -1579,6 +1622,23 @@ export const AdminPortal: React.FC = () => {
                   <button onClick={() => setInspectingOrder(null)} style={{ cursor: 'pointer', color: 'var(--text-secondary)', background: 'none', border: 'none' }}><X size={18} /></button>
                 </div>
 
+                {inspectingOrder.paymentMethod === 'Online' && inspectingOrder.paymentStatus !== 'Paid' && (
+                  <div style={{
+                    padding: '12px 16px',
+                    borderRadius: '6px',
+                    backgroundColor: 'rgba(231, 76, 60, 0.12)',
+                    border: '1px solid #e74c3c',
+                    color: '#c0392b',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <span>🔴 ONLINE PAYMENT FAILED / UNPAID (User abandoned or gateway failed)</span>
+                  </div>
+                )}
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div className="input-group">
                     <label style={{ fontSize: '0.72rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '8px' }}>Fulfillment Status</label>
@@ -1599,10 +1659,20 @@ export const AdminPortal: React.FC = () => {
                     <select
                       value={inspectingOrder.paymentStatus}
                       onChange={e => handleUpdatePayment(inspectingOrder.id, e.target.value as any)}
-                      style={{ width: '100%', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-light)', padding: '10px', color: 'var(--text-primary)', borderRadius: '6px', outline: 'none' }}
+                      style={{
+                        width: '100%',
+                        backgroundColor: 'var(--bg-primary)',
+                        border: '1px solid var(--border-light)',
+                        padding: '10px',
+                        color: inspectingOrder.paymentStatus === 'Paid' ? '#27ae60' : (inspectingOrder.paymentMethod === 'Online' || inspectingOrder.paymentStatus === 'Failed' ? '#e74c3c' : '#e67e22'),
+                        borderRadius: '6px',
+                        outline: 'none',
+                        fontWeight: 700
+                      }}
                     >
-                      <option value="Pending">Pending</option>
-                      <option value="Paid">Paid</option>
+                      <option value="Pending" style={{ color: '#e67e22' }}>Pending</option>
+                      <option value="Paid" style={{ color: '#27ae60' }}>Paid</option>
+                      <option value="Failed" style={{ color: '#e74c3c' }}>Failed / Unpaid</option>
                     </select>
                   </div>
                 </div>

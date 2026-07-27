@@ -203,12 +203,19 @@ export const MyAccount: React.FC = () => {
     setResetLoading(false);
   };
 
-  // Filter orders for the logged-in user
+  // Filter orders for the logged-in user (COD orders or Paid Online orders)
   const userOrders = currentUser
     ? orders.filter(
-        (order) =>
-          order.customerEmail.toLowerCase() === currentUser.email.toLowerCase() ||
-          order.customerPhone === currentUser.phone
+        (order) => {
+          const matchesUser = order.customerEmail.toLowerCase() === currentUser.email.toLowerCase() ||
+            order.customerPhone === currentUser.phone;
+          if (!matchesUser) return false;
+          // Hide unpaid online orders (Pending, Failed, Cancelled) from customer view
+          if (order.paymentMethod === 'Online' && order.paymentStatus !== 'Paid') {
+            return false;
+          }
+          return true;
+        }
       )
     : [];
 

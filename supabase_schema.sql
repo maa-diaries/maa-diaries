@@ -183,9 +183,14 @@ CREATE TABLE IF NOT EXISTS public.registered_users (
     city text,
     state text,
     pincode text,
+    cart jsonb DEFAULT '[]'::jsonb,
+    wishlist jsonb DEFAULT '[]'::jsonb,
     updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+ALTER TABLE public.registered_users ADD COLUMN IF NOT EXISTS cart jsonb DEFAULT '[]'::jsonb;
+ALTER TABLE public.registered_users ADD COLUMN IF NOT EXISTS wishlist jsonb DEFAULT '[]'::jsonb;
 
 ALTER TABLE public.registered_users ENABLE ROW LEVEL SECURITY;
 -- Users can read their own profile; admin can read all

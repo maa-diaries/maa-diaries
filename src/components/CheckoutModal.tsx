@@ -79,68 +79,73 @@ export const CheckoutModal: React.FC = () => {
       // Clear all URL parameters and hash fragments immediately to avoid leakage
       window.history.replaceState({}, document.title, window.location.pathname);
 
-      const pendingOrderStr = localStorage.getItem('md_pending_payu_order');
+      const pendingOrderStr = sessionStorage.getItem('md_pending_payu_order') || localStorage.getItem('md_pending_payu_order');
+      let draft: any = null;
       if (pendingOrderStr) {
-        const draft = JSON.parse(pendingOrderStr);
-        // Pre-fill the shipping details from draft
-        setName(draft.name || '');
-        setEmail(draft.email || '');
-        setPhone(draft.phone || '');
-        setAddress(draft.address || '');
-        setCity(draft.city || '');
-        setState(draft.state || '');
-        setPincode(draft.pincode || '');
+        try {
+          draft = JSON.parse(pendingOrderStr);
+          setName(draft.name || '');
+          setEmail(draft.email || '');
+          setPhone(draft.phone || '');
+          setAddress(draft.address || '');
+          setCity(draft.city || '');
+          setState(draft.state || '');
+          setPincode(draft.pincode || '');
+        } catch (e) {}
+      }
 
-        const targetTxnid = txnidParam || draft.txnid;
+      const targetTxnid = txnidParam || (draft ? draft.txnid : '');
+      setCheckoutOpen(true);
 
-        if (paymentStatus === 'success') {
-          setProcessing(true);
-          setCheckoutOpen(true);
-          
-          databaseService.getOrderByTxnid(targetTxnid).then(async (existingOrder) => {
-            if (existingOrder) {
-              if (existingOrder.paymentStatus !== 'Paid') {
-                await databaseService.updateOrderPaymentStatus(existingOrder.id, 'Paid');
-                existingOrder.paymentStatus = 'Paid';
-              }
-              setPlacedOrderDetails(existingOrder);
-              setStep('success');
-            } else {
-               const order = await placeOrder({
-                 customerName: draft.name,
-                 customerEmail: draft.email,
-                 customerPhone: draft.phone,
-                 addressLine: draft.address,
-                 city: draft.city,
-                 state: draft.state,
-                 pincode: draft.pincode,
-                 estimatedDelivery: 'within 15 days from ordered date',
-                 courierPartner: 'Normal Delivery',
-                 shippingCost: draft.shippingCost,
-                 appliedCouponCode: draft.appliedCouponCode
-               }, 'Online', 'Paid', targetTxnid);
-              setPlacedOrderDetails(order);
-              setStep('success');
+      if (paymentStatus === 'success') {
+        setProcessing(true);
+        databaseService.getOrderByTxnid(targetTxnid).then(async (existingOrder) => {
+          if (existingOrder) {
+            if (existingOrder.paymentStatus !== 'Paid') {
+              await databaseService.updateOrderPaymentStatus(existingOrder.id, 'Paid');
+              existingOrder.paymentStatus = 'Paid';
             }
-            setProcessing(false);
+            setPlacedOrderDetails(existingOrder);
+            setStep('success');
+          } else if (draft) {
+            const order = await placeOrder({
+              customerName: draft.name,
+              customerEmail: draft.email,
+              customerPhone: draft.phone,
+              addressLine: draft.address,
+              city: draft.city,
+              state: draft.state,
+              pincode: draft.pincode,
+              estimatedDelivery: 'within 15 days from ordered date',
+              courierPartner: 'Normal Delivery',
+              shippingCost: draft.shippingCost,
+              appliedCouponCode: draft.appliedCouponCode
+            }, 'Online', 'Paid', targetTxnid);
+            setPlacedOrderDetails(order);
+            setStep('success');
+          } else {
+            setStep('success');
+          }
+          setProcessing(false);
+          try {
+            sessionStorage.removeItem('md_pending_payu_order');
             localStorage.removeItem('md_pending_payu_order');
-          }).catch((err) => {
-            console.error("Error completing PayU order:", err);
-            setProcessing(false);
-            setPayuError('Failed to save your order after successful payment. Please contact support.');
-            setStep('shipping');
-          });
-        } else if (paymentStatus === 'failure') {
-          setCheckoutOpen(true);
+            sessionStorage.removeItem('md_session_cart');
+          } catch (e) {}
+        }).catch((err) => {
+          console.error("Error completing PayU order:", err);
+          setProcessing(false);
+          setPayuError('Failed to save order details. Please contact customer support.');
           setStep('shipping');
-          setAuthError('Payment failed. Please choose another payment method or try again.');
+        });
+      } else {
+        // Payment failed or cancelled by user
+        setStep('shipping');
+        setAuthError(paymentStatus === 'failure' ? 'Payment was cancelled or failed. You can try again or select Cash on Delivery.' : 'Payment session ended.');
+        try {
+          sessionStorage.removeItem('md_pending_payu_order');
           localStorage.removeItem('md_pending_payu_order');
-        } else if (paymentStatus === 'warning') {
-          setCheckoutOpen(true);
-          setStep('shipping');
-          setAuthError('Payment session warning. Please check your credentials.');
-          localStorage.removeItem('md_pending_payu_order');
-        }
+        } catch (e) {}
       }
     }
   }, []);
@@ -481,7 +486,10 @@ export const CheckoutModal: React.FC = () => {
           paymentMethod,
           appliedCouponCode: appliedCoupon?.code
         };
-        localStorage.setItem('md_pending_payu_order', JSON.stringify(orderDraft));
+        try {
+          sessionStorage.setItem('md_pending_payu_order', JSON.stringify(orderDraft));
+          localStorage.setItem('md_pending_payu_order', JSON.stringify(orderDraft));
+        } catch (e) {}
 
         // Create PayU redirect form
         const form = document.createElement('form');

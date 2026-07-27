@@ -210,17 +210,19 @@ export const Home: React.FC = () => {
     : [];
   const categories = [...defaultCategories, ...customHomeCategories.filter(c => !defaultCategories.some(d => d.id === c.id))];
 
-  // Filtering products — use admin-selected IDs or fall back to defaults
+  // Filtering products — use admin-selected IDs or fall back to curated top 8 items
   const productList = (products && products.length > 0) ? products : INITIAL_PRODUCTS;
-  const newArrivals = siteSettings.homeNewArrivals.length > 0
+  const newArrivals = siteSettings.homeNewArrivals && siteSettings.homeNewArrivals.length > 0
     ? siteSettings.homeNewArrivals.map(id => productList.find(p => p.id === id)).filter(Boolean) as typeof productList
-    : productList;
-  const bestSellers = siteSettings.homeBestSellers.length > 0
+    : productList.slice(0, 8);
+
+  const bestSellers = siteSettings.homeBestSellers && siteSettings.homeBestSellers.length > 0
     ? siteSettings.homeBestSellers.map(id => productList.find(p => p.id === id)).filter(Boolean) as typeof productList
-    : productList.filter(p => p.rating >= 4.8);
-  const trending = siteSettings.homeTrending.length > 0
+    : productList.filter(p => p.rating >= 4.8).slice(0, 8);
+
+  const trending = siteSettings.homeTrending && siteSettings.homeTrending.length > 0
     ? siteSettings.homeTrending.map(id => productList.find(p => p.id === id)).filter(Boolean) as typeof productList
-    : productList.slice(3);
+    : productList.slice(4, 12);
 
   // Copy coupon handler
   const handleCopyCoupon = (code: string) => {

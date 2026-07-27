@@ -52,7 +52,12 @@ export default async function handler(req: any, res: any) {
 
     const salt = process.env.PAYU_MERCHANT_SALT?.trim();
     const merchantKey = process.env.PAYU_MERCHANT_KEY?.trim();
-    const baseUrl = (process.env.BASE_URL || 'http://localhost:5173').trim();
+    
+    // Dynamic host resolution for production redirect return
+    const host = (req.headers['x-forwarded-host'] as string) || req.headers.host || '';
+    const proto = (req.headers['x-forwarded-proto'] as string) || 'https';
+    const dynamicBase = host ? `${proto}://${host}` : 'https://maadiaries.com';
+    const baseUrl = (process.env.BASE_URL || dynamicBase).trim().replace(/\/+$/, '');
 
     if (!salt) {
       console.error('PAYU_MERCHANT_SALT environment variable is missing.');

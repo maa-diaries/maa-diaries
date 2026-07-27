@@ -41,7 +41,7 @@ export interface Order {
   courierPartner: string;
   shippingCost: number;
   paymentMethod: 'COD' | 'Online';
-  paymentStatus: 'Pending' | 'Paid';
+  paymentStatus: 'Pending' | 'Paid' | 'Failed';
   items: OrderItem[];
   totalAmount: number;
   status: 'Pending' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled';
@@ -450,7 +450,7 @@ export const databaseService = {
     if (!isSupabaseConfigured) return null;
     const { data, error } = await supabase
       .from('registered_users')
-      .select('name, email, phone, address_line, city, state, pincode')
+      .select('*')
       .eq('email', email)
       .maybeSingle();
     if (error) throw error;
@@ -462,8 +462,25 @@ export const databaseService = {
       addressLine: data.address_line,
       city: data.city,
       state: data.state,
-      pincode: data.pincode
+      pincode: data.pincode,
+      cart: data.cart || [],
+      wishlist: data.wishlist || []
     };
+  },
+
+  async updateUserCartAndWishlist(email: string, cart: any[], wishlist: string[]): Promise<void> {
+    if (!isSupabaseConfigured || !email) return;
+    try {
+      await supabase
+        .from('registered_users')
+        .update({
+          cart,
+          wishlist
+        })
+        .eq('email', email);
+    } catch (e) {
+      console.warn("Could not sync user cart/wishlist to Supabase registered_users table:", e);
+    }
   },
 
   async getUserByPhone(phone: string): Promise<any | null> {
