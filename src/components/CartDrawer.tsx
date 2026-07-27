@@ -233,12 +233,12 @@ export const CartDrawer: React.FC = () => {
 
                   {/* Configured details */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    <span>{item.selectedMetal}</span>
-                    <span>•</span>
-                    <span>{item.selectedStone}</span>
+                    {item.selectedMetal && <span>{item.selectedMetal}</span>}
+                    {item.selectedMetal && item.selectedStone && <span>•</span>}
+                    {item.selectedStone && <span>{item.selectedStone}</span>}
                     {item.customEngraving && (
                       <>
-                        <span>•</span>
+                        {(item.selectedMetal || item.selectedStone) && <span>•</span>}
                         <span style={{ color: 'var(--gold-primary)', fontStyle: 'italic' }}>
                           "{item.customEngraving}"
                         </span>

@@ -425,20 +425,29 @@ export const CheckoutModal: React.FC = () => {
       }, 'Online', 'Pending', txnid);
       setPendingOrderObj(pendingOrder);
 
-      // 2. Fetch PayU hash
-      const response = await fetch('/api/payu-hash', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          txnid,
-          amount: grandTotal,
-          productinfo: cart.map(item => item.product.name).join(', ').substring(0, 100) || 'Maa Diaries Order',
-          firstname: name,
-          email,
-          phone,
-          udf1: pendingOrder.id // Send database order ID
-        })
-      });
+      // 2. Fetch PayU hash with 10s timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      let response: Response;
+      try {
+        response = await fetch('/api/payu-hash', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            txnid,
+            amount: grandTotal,
+            productinfo: cart.map(item => item.product.name).join(', ').substring(0, 100) || 'Maa Diaries Order',
+            firstname: name,
+            email,
+            phone,
+            udf1: pendingOrder.id // Send database order ID
+          })
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         throw new Error('Failed to connect to PayU hash service');

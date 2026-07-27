@@ -8,6 +8,7 @@ import {
 import { ProductCard } from '../components/ProductCard';
 import { databaseService } from '../services/database';
 import { getVisibleDefaultReviews } from '../data/defaultReviews';
+import { INITIAL_PRODUCTS } from '../data/products';
 
 const defaultCategories = [
   { id: 'earrings', name: 'Earrings', desc: 'Western & Traditional', image: 'https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=400&q=80' },
@@ -210,15 +211,16 @@ export const Home: React.FC = () => {
   const categories = [...defaultCategories, ...customHomeCategories.filter(c => !defaultCategories.some(d => d.id === c.id))];
 
   // Filtering products — use admin-selected IDs or fall back to defaults
+  const productList = (products && products.length > 0) ? products : INITIAL_PRODUCTS;
   const newArrivals = siteSettings.homeNewArrivals.length > 0
-    ? siteSettings.homeNewArrivals.map(id => products.find(p => p.id === id)).filter(Boolean) as typeof products
-    : products;
+    ? siteSettings.homeNewArrivals.map(id => productList.find(p => p.id === id)).filter(Boolean) as typeof productList
+    : productList;
   const bestSellers = siteSettings.homeBestSellers.length > 0
-    ? siteSettings.homeBestSellers.map(id => products.find(p => p.id === id)).filter(Boolean) as typeof products
-    : products.filter(p => p.rating >= 4.8);
+    ? siteSettings.homeBestSellers.map(id => productList.find(p => p.id === id)).filter(Boolean) as typeof productList
+    : productList.filter(p => p.rating >= 4.8);
   const trending = siteSettings.homeTrending.length > 0
-    ? siteSettings.homeTrending.map(id => products.find(p => p.id === id)).filter(Boolean) as typeof products
-    : products.slice(3);
+    ? siteSettings.homeTrending.map(id => productList.find(p => p.id === id)).filter(Boolean) as typeof productList
+    : productList.slice(3);
 
   // Copy coupon handler
   const handleCopyCoupon = (code: string) => {

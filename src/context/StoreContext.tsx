@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Product } from '../data/products';
+import { INITIAL_PRODUCTS } from '../data/products';
 import { databaseService } from '../services/database';
 import type { Order, OrderItem, Inquiry, ProductReview, Coupon, SiteSettings } from '../services/database';
 import { defaultSiteSettings } from '../services/siteSettings';
@@ -121,7 +122,7 @@ interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -600,8 +601,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Cart operations
   const addToCart = (itemData: Omit<CartItem, 'key'>) => {
-    // Create unique key based on item details
-    const key = `${itemData.product.id}-${itemData.selectedMetal.replace(/\s+/g, '')}-${itemData.selectedStone.replace(/\s+/g, '')}-${itemData.customEngraving || ''}`;
+    // Create unique key based on item details with safe fallbacks
+    const metalStr = (itemData.selectedMetal || 'Standard').replace(/\s+/g, '');
+    const stoneStr = (itemData.selectedStone || 'Standard').replace(/\s+/g, '');
+    const key = `${itemData.product?.id || 'item'}-${metalStr}-${stoneStr}-${itemData.customEngraving || ''}`;
     
     const product = products.find(p => p.id === itemData.product.id);
     const availableStock = product?.stock ?? 999;
@@ -756,18 +759,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
 
       clearCart();
-      await refreshOrders();
       setTriggerGemRain(true); // Fire diamond shower!
 
-      // Stock decrement is handled automatically via database trigger on order insert
-      await refreshProducts();
-
-      // Dispatch order receipt/alert emails via Resend
-      try {
-        await sendEmailViaResend('order', { order: newOrder });
-      } catch (emailErr) {
+      // Run background refreshes and email sending asynchronously without blocking redirect/response
+      refreshOrders().catch(err => console.warn("Background refreshOrders error:", err));
+      refreshProducts().catch(err => console.warn("Background refreshProducts error:", err));
+      sendEmailViaResend('order', { order: newOrder }).catch(emailErr => {
         console.warn("Order placed, but failed to send confirmation email:", emailErr);
-      }
+      });
 
       return newOrder;
     } catch (error: any) {
