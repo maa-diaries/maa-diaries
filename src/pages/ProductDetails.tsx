@@ -156,7 +156,8 @@ export const ProductDetails: React.FC = () => {
         name: product.name,
         price: calculatedPrice,
         image: product.image,
-        category: product.category
+        category: product.category,
+        isFreeDelivery: product.isFreeDelivery
       },
       quantity: 1,
       selectedMetal,

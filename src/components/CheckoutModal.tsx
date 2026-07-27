@@ -10,6 +10,7 @@ type OnlineMode = 'UPI' | 'Card' | 'Netbanking';
 export const CheckoutModal: React.FC = () => {
   const { 
     cart, 
+    products,
     checkoutOpen, 
     setCheckoutOpen, 
     placeOrder,
@@ -228,7 +229,7 @@ export const CheckoutModal: React.FC = () => {
     discountLabel = 'Auto Discount (10% off > ₹999)';
   }
   const cartTotal = subtotal - discountAmount;
-  const hasFreeDeliveryProduct = cart.some(item => item.product.isFreeDelivery);
+  const hasFreeDeliveryProduct = cart.some(item => Boolean(item.product.isFreeDelivery) || Boolean(products.find((p: any) => p.id === item.product.id)?.isFreeDelivery));
   const shippingCost = (hasFreeDeliveryProduct || subtotal >= siteSettings.freeShippingThreshold) ? 0 : 99;
   const codFee = paymentMethod === 'COD' ? 50 : 0;
   const grandTotal = cartTotal + shippingCost + codFee;

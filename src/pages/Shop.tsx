@@ -119,7 +119,7 @@ export const Shop: React.FC = () => {
     }
     window.dispatchEvent(new CustomEvent('product-added', { detail: { image: product.image } }));
     addToCart({
-      product: { id: product.id, name: product.name, price: product.price, image: product.image, category: product.category },
+      product: { id: product.id, name: product.name, price: product.price, image: product.image, category: product.category, isFreeDelivery: product.isFreeDelivery },
       quantity: 1,
       selectedMetal: product.metalOptions[0] || product.specs.metal,
       selectedStone: product.stoneOptions[0] || product.specs.stoneType
