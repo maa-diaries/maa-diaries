@@ -282,6 +282,15 @@ export const databaseService = {
     if (error) throw error;
   },
 
+  async deleteAllProducts(): Promise<void> {
+    if (!isSupabaseConfigured) return;
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .gte('price', 0);
+    if (error) throw error;
+  },
+
   // --- Orders API ---
   async getOrders(): Promise<Order[]> {
     if (!isSupabaseConfigured) {

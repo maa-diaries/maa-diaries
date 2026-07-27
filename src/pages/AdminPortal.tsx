@@ -432,6 +432,22 @@ export const AdminPortal: React.FC = () => {
     }
   };
 
+  const handleDeleteAllProducts = async () => {
+    if (window.confirm('Are you sure you want to delete ALL products from your Supabase database? This action cannot be undone.')) {
+      setIsPending(true);
+      try {
+        await databaseService.deleteAllProducts();
+        await refreshProducts();
+        alert("All products have been deleted from Supabase.");
+      } catch (err: any) {
+        console.error("Failed to delete all products:", err);
+        alert("Failed to delete products: " + (err.message || 'Unknown error'));
+      } finally {
+        setIsPending(false);
+      }
+    }
+  };
+
   const startEdit = (p: Product) => {
     setEditingProduct(p);
     setProdName(p.name);
@@ -992,13 +1008,36 @@ export const AdminPortal: React.FC = () => {
       {activeTab === 'products' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {!showAddForm && !editingProduct && (
-            <button 
-              onClick={() => { resetForm(); setShowAddForm(true); scrollToProductForm(); }}
-              className="gold-button"
-              style={{ alignSelf: 'flex-start', display: 'flex', gap: '8px', padding: '10px 20px', fontSize: '0.8rem' }}
-            >
-              <Plus size={16} /> Add Product
-            </button>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button 
+                onClick={() => { resetForm(); setShowAddForm(true); scrollToProductForm(); }}
+                className="gold-button"
+                style={{ display: 'flex', gap: '8px', padding: '10px 20px', fontSize: '0.8rem' }}
+              >
+                <Plus size={16} /> Add Product
+              </button>
+              {products.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleDeleteAllProducts}
+                  style={{
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    border: '1px solid #e74c3c',
+                    color: '#c0392b',
+                    borderRadius: '6px',
+                    padding: '10px 16px',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Trash2 size={14} /> Clear All Database Products ({products.length})
+                </button>
+              )}
+            </div>
           )}
 
           {(showAddForm || editingProduct) && (
