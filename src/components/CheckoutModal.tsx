@@ -228,8 +228,8 @@ export const CheckoutModal: React.FC = () => {
     discountLabel = 'Auto Discount (10% off > ₹999)';
   }
   const cartTotal = subtotal - discountAmount;
-  
-  const shippingCost = subtotal >= siteSettings.freeShippingThreshold ? 0 : 99;
+  const hasFreeDeliveryProduct = cart.some(item => item.product.isFreeDelivery);
+  const shippingCost = (hasFreeDeliveryProduct || subtotal >= siteSettings.freeShippingThreshold) ? 0 : 99;
   const codFee = paymentMethod === 'COD' ? 50 : 0;
   const grandTotal = cartTotal + shippingCost + codFee;
 
@@ -242,7 +242,7 @@ export const CheckoutModal: React.FC = () => {
   }, [subtotal, appliedCoupon]);
 
   const diff = siteSettings.freeShippingThreshold - subtotal;
-  const isFree = diff <= 0;
+  const isFree = hasFreeDeliveryProduct || diff <= 0;
   const shippingThresholdBanner = (
     <div style={{
       padding: '10px 12px',
@@ -262,7 +262,7 @@ export const CheckoutModal: React.FC = () => {
       transition: 'all 0.3s ease'
     }}>
       {isFree ? (
-        <span>🎉 Congratulations! Your order qualifies for <strong>FREE Shipping</strong>!</span>
+        <span>🎉 {hasFreeDeliveryProduct ? 'Free Delivery Item in Cart — No Delivery Fee!' : 'Congratulations! Your order qualifies for FREE Shipping!'}</span>
       ) : (
         <span>Add <strong>₹{diff.toLocaleString('en-IN')}</strong> more to unlock <strong>FREE Shipping</strong>!</span>
       )}

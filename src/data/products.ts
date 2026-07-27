@@ -20,6 +20,7 @@ export interface Product {
     finish: string;
   };
   isFeatured?: boolean;
+  isFreeDelivery?: boolean;
   stock?: number;
   sku?: string;
 }

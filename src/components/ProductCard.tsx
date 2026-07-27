@@ -42,6 +42,24 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, sh
           <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#fff', letterSpacing: '0.06em' }}>{badge.label}</span>
         </div>
       )}
+
+      {product.isFreeDelivery && (
+        <div style={{
+          position: 'absolute',
+          top: '12px',
+          right: '50px',
+          zIndex: 3,
+          background: '#27ae60',
+          borderRadius: '20px',
+          padding: '3px 8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '3px',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
+        }}>
+          <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#fff', letterSpacing: '0.04em' }}>🚚 FREE DELIVERY</span>
+        </div>
+      )}
       {showRating && product.reviewsCount > 0 && (
         <div style={{
           position: 'absolute',

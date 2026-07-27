@@ -87,11 +87,14 @@ CREATE TABLE IF NOT EXISTS public.products (
     stone_options jsonb DEFAULT '[]'::jsonb,
     specs jsonb DEFAULT '{}'::jsonb,
     is_featured boolean DEFAULT false,
+    is_free_delivery boolean DEFAULT false,
     stock integer DEFAULT 0,
     sku text,
     updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_free_delivery boolean DEFAULT false;
 
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 -- Public read, admin write

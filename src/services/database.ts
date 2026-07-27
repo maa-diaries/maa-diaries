@@ -95,6 +95,7 @@ const mapProduct = (row: any): Product => ({
     finish: ''
   },
   isFeatured: Boolean(row.is_featured),
+  isFreeDelivery: Boolean(row.is_free_delivery),
   stock: (typeof row.stock === 'number' && row.stock > 0) ? row.stock : 10,
   sku: row.sku || undefined
 });
@@ -182,7 +183,8 @@ export const databaseService = {
         metal_options: productData.metalOptions,
         stone_options: productData.stoneOptions,
         specs: productData.specs,
-        is_featured: productData.isFeatured || false
+        is_featured: productData.isFeatured || false,
+        is_free_delivery: productData.isFreeDelivery || false
         ,stock: productData.stock ?? 0
         ,sku: productData.sku || null
       });
@@ -210,7 +212,8 @@ export const databaseService = {
         metal_options: updatedProduct.metalOptions,
         stone_options: updatedProduct.stoneOptions,
         specs: updatedProduct.specs,
-        is_featured: updatedProduct.isFeatured || false
+        is_featured: updatedProduct.isFeatured || false,
+        is_free_delivery: updatedProduct.isFreeDelivery || false
         ,stock: updatedProduct.stock ?? 0
         ,sku: updatedProduct.sku || null
       })

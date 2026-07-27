@@ -108,6 +108,7 @@ export const AdminPortal: React.FC = () => {
   const [prodPrice, setProdPrice] = useState(0);
   const [prodStock, setProdStock] = useState(0);
   const [prodSku, setProdSku] = useState('');
+  const [prodFreeDelivery, setProdFreeDelivery] = useState(false);
   const [prodImage, setProdImage] = useState('');
   const [prodDesc, setProdDesc] = useState('');
   const [prodPlating, setProdPlating] = useState('18k Rolled Gold Micro-Plating');
@@ -350,6 +351,7 @@ export const AdminPortal: React.FC = () => {
         discount: prodDiscount || 0,
         stock: prodStock,
         sku: prodSku || undefined,
+        isFreeDelivery: prodFreeDelivery,
         rating: 5.0,
         reviewsCount: 0,
         image: prodImage,
@@ -395,6 +397,7 @@ export const AdminPortal: React.FC = () => {
         discount: prodDiscount || 0,
         stock: prodStock,
         sku: prodSku || undefined,
+        isFreeDelivery: prodFreeDelivery,
         image: prodImage,
         metalOptions: [prodPlating],
         stoneOptions: [prodTarnish],
@@ -457,6 +460,7 @@ export const AdminPortal: React.FC = () => {
     setProdPrice(p.price);
     setProdStock(p.stock ?? 0);
     setProdSku(p.sku || '');
+    setProdFreeDelivery(Boolean(p.isFreeDelivery));
     setProdImage(p.image);
     setProdDesc(p.description);
     setProdPlating(p.metalOptions[0] || '');
@@ -476,6 +480,7 @@ export const AdminPortal: React.FC = () => {
     setProdPrice(0);
     setProdStock(0);
     setProdSku('');
+    setProdFreeDelivery(false);
     setProdImage('');
     setProdDesc('');
     setProdPlating('18k Rolled Gold Micro-Plating');
@@ -1156,6 +1161,20 @@ export const AdminPortal: React.FC = () => {
                     Choose File<input type="file" accept="image/*" onChange={e => handleImageFile(e.target.files?.[0])} style={{ display: 'none' }} />
                   </label>
                 </div>
+              </div>
+
+              {/* Free Delivery Toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px', padding: '12px 16px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
+                <input 
+                  type="checkbox" 
+                  id="isFreeDeliveryCheck" 
+                  checked={prodFreeDelivery} 
+                  onChange={e => setProdFreeDelivery(e.target.checked)} 
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--gold-primary)' }} 
+                />
+                <label htmlFor="isFreeDeliveryCheck" style={{ cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  🚚 Free Delivery / No Delivery Fee (Orders with this product get FREE shipping)
+                </label>
               </div>
 
               {/* Image Preview */}

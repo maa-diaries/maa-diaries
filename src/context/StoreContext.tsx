@@ -13,6 +13,7 @@ export interface CartItem {
     price: number;
     image: string;
     category: string;
+    isFreeDelivery?: boolean;
   };
   quantity: number;
   selectedMetal: string;
