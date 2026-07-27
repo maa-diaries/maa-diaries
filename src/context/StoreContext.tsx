@@ -590,13 +590,35 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
 
-  // Save cart/wishlist to localStorage on changes
+  // Save cart/wishlist to localStorage safely without throwing QuotaExceededError
   useEffect(() => {
-    localStorage.setItem('md_cart', JSON.stringify(cart));
+    try {
+      const minimalCart = cart.map(item => ({
+        key: item.key,
+        product: {
+          id: item.product.id,
+          name: item.product.name,
+          price: item.product.price,
+          image: item.product.image,
+          category: item.product.category
+        },
+        quantity: item.quantity,
+        selectedMetal: item.selectedMetal,
+        selectedStone: item.selectedStone,
+        customEngraving: item.customEngraving
+      }));
+      localStorage.setItem('md_cart', JSON.stringify(minimalCart));
+    } catch (err) {
+      console.warn("Failed to persist cart to localStorage (QuotaExceededError or blocked):", err);
+    }
   }, [cart]);
 
   useEffect(() => {
-    localStorage.setItem('md_wishlist', JSON.stringify(wishlist));
+    try {
+      localStorage.setItem('md_wishlist', JSON.stringify(wishlist));
+    } catch (err) {
+      console.warn("Failed to persist wishlist to localStorage:", err);
+    }
   }, [wishlist]);
 
   // Cart operations

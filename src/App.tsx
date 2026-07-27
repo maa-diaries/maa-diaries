@@ -185,7 +185,11 @@ function App() {
                 </Suspense>
               </ErrorBoundary>
             } />
-            <Route path="*" element={<AppContent />} />
+            <Route path="*" element={
+              <ErrorBoundary>
+                <AppContent />
+              </ErrorBoundary>
+            } />
           </Routes>
         </ToastProvider>
       </StoreProvider>
