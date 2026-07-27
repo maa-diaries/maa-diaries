@@ -1,5 +1,15 @@
 const hits = new Map<string, { count: number; resetAt: number }>();
 
+// Periodically clean up expired entries from memory every 5 minutes
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [k, v] of hits.entries()) {
+      if (now > v.resetAt) hits.delete(k);
+    }
+  }, 300000);
+}
+
 export async function rateLimit(
   key: string,
   limit: number = 10,

@@ -91,7 +91,9 @@ export const CheckoutModal: React.FC = () => {
           setCity(draft.city || '');
           setState(draft.state || '');
           setPincode(draft.pincode || '');
-        } catch (e) {}
+        } catch (e) {
+          console.error('Failed to parse pending PayU order draft:', e);
+        }
       }
 
       const targetTxnid = txnidParam || (draft ? draft.txnid : '');
@@ -164,7 +166,6 @@ export const CheckoutModal: React.FC = () => {
   const [authError, setAuthError] = useState('');
   const [showRegOtp, setShowRegOtp] = useState(false);
   const [regOtpCode, setRegOtpCode] = useState('');
-  const [expectedRegOtp, setExpectedRegOtp] = useState('');
 
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
@@ -286,13 +287,22 @@ export const CheckoutModal: React.FC = () => {
       setAuthError('Please enter a valid 6-digit verification code.');
       return;
     }
-    if (regOtpCode !== expectedRegOtp) {
-      setAuthError('Invalid verification code. Please check your email.');
-      return;
-    }
 
     setProcessing(true);
     try {
+      // Server-side OTP verification via /api/verify-otp
+      const verifyRes = await fetch('/api/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp: regOtpCode })
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok || !verifyData.verified) {
+        setAuthError(verifyData.error || 'Invalid or expired verification code.');
+        setProcessing(false);
+        return;
+      }
+
       const result = await registerUser({
         name,
         email,
@@ -312,7 +322,6 @@ export const CheckoutModal: React.FC = () => {
       setProcessing(false);
       setShowRegOtp(false);
       setRegOtpCode('');
-      setExpectedRegOtp('');
       // Proceed to payment selection
       setPayuError('');
       setStep('payment-select');
@@ -365,7 +374,6 @@ export const CheckoutModal: React.FC = () => {
         }
 
         if (result.needsVerification) {
-          setExpectedRegOtp(result.verificationCode || '');
           setShowRegOtp(true);
           setProcessing(false);
           return;

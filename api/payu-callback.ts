@@ -113,13 +113,34 @@ export default async function handler(req: any, res: any) {
 
     // Update order status in Supabase if database connection is available
     const dbOrderId = udf1;
+    let amountVerified = true;
+
     if (supabaseAdmin && dbOrderId) {
       try {
+        // Defense-in-depth: Fetch existing order to verify returned amount matches stored total_amount
+        const { data: existingOrder } = await supabaseAdmin
+          .from('orders')
+          .select('total_amount')
+          .eq('id', dbOrderId)
+          .single();
+
+        if (existingOrder && existingOrder.total_amount) {
+          const returnedAmount = parseFloat(amount || '0');
+          const expectedAmount = parseFloat(existingOrder.total_amount);
+          if (Math.abs(returnedAmount - expectedAmount) > 0.05) {
+            console.error(`PayU amount mismatch for order ${dbOrderId}. Expected ₹${expectedAmount}, got ₹${returnedAmount}. Marking as fraud/failed.`);
+            amountVerified = false;
+          }
+        }
+
+        const finalPaymentStatus = (isSuccess && amountVerified) ? 'Paid' : 'Failed';
+        const finalOrderStatus = (isSuccess && amountVerified) ? 'Processing' : 'Cancelled';
+
         await supabaseAdmin
           .from('orders')
           .update({
-            payment_status: isSuccess ? 'Paid' : 'Failed',
-            status: isSuccess ? 'Processing' : 'Cancelled',
+            payment_status: finalPaymentStatus,
+            status: finalOrderStatus,
             payu_id: payId
           })
           .eq('id', dbOrderId);
@@ -128,10 +149,11 @@ export default async function handler(req: any, res: any) {
       }
     }
 
-    if (isSuccess) {
+    if (isSuccess && amountVerified) {
       return res.redirect(`${baseUrl}/#payment_status=success&txnid=${txnid}&payuid=${payId}`);
     } else {
-      return res.redirect(`${baseUrl}/#payment_status=failure&txnid=${txnid}`);
+      const reason = !amountVerified ? 'amount_mismatch' : 'payment_failed';
+      return res.redirect(`${baseUrl}/#payment_status=failure&txnid=${txnid}&reason=${reason}`);
     }
   } catch (error: any) {
     console.error('Error handling PayU callback:', error);

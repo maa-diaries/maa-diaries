@@ -24,4 +24,4 @@ export interface Product {
   sku?: string;
 }
 
-export const INITIAL_PRODUCTS: Product[] = [];
+

@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { ArrowLeft, ShoppingBag, Heart, ShieldCheck, MapPin, Truck, Star } from 'lucide-react';
 import { Breadcrumb } from '../components/Breadcrumb';
-import { INITIAL_PRODUCTS } from '../data/products';
 
 export const ProductDetails: React.FC = () => {
   const navigate = useNavigate();
@@ -21,7 +20,7 @@ export const ProductDetails: React.FC = () => {
     orders
   } = useStore();
 
-  const product = products.find(p => p.id === routeProductId) || INITIAL_PRODUCTS.find(p => p.id === routeProductId);
+  const product = products.find(p => p.id === routeProductId);
 
   // Configuration selections
   const selectedMetal = product?.metalOptions[0] || '18k Yellow Gold';

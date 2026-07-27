@@ -1,4 +1,3 @@
-import { INITIAL_PRODUCTS } from '../data/products';
 import type { Product } from '../data/products';
 import { supabase, isSupabaseConfigured } from './supabase';
 import { type Coupon } from './coupons';
@@ -143,7 +142,7 @@ export const databaseService = {
   // --- Products API ---
   async getProducts(): Promise<Product[]> {
     if (!isSupabaseConfigured) {
-      return INITIAL_PRODUCTS;
+      return [];
     }
     const { data, error } = await supabase
       .from('products')
@@ -152,51 +151,6 @@ export const databaseService = {
     
     if (error) throw error;
     return (data || []).map(mapProduct);
-  },
-
-  async seedProducts(): Promise<Product[]> {
-    if (!isSupabaseConfigured) return INITIAL_PRODUCTS;
-    try {
-      const dbRows = INITIAL_PRODUCTS.map(p => ({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        category: p.category,
-        subcategory: p.subcategory || null,
-        price: p.price,
-        original_price: p.originalPrice || null,
-        discount: p.discount || null,
-        image: p.image,
-        rating: p.rating,
-        reviews_count: p.reviewsCount,
-        metal_options: p.metalOptions,
-        stone_options: p.stoneOptions,
-        specs: p.specs,
-        is_featured: p.isFeatured || false,
-        stock: p.stock ?? 10
-      }));
-      const { data, error } = await supabase
-        .from('products')
-        .insert(dbRows)
-        .select('*');
-      if (error) throw error;
-      return (data || []).map(mapProduct);
-    } catch (err) {
-      console.error("Failed to seed products in Supabase:", err);
-      return INITIAL_PRODUCTS;
-    }
-  },
-
-  async resetAndSeedProducts(): Promise<Product[]> {
-    if (!isSupabaseConfigured) {
-      throw new Error("Supabase is not configured. Cannot reset products.");
-    }
-    const { error: deleteError } = await supabase
-      .from('products')
-      .delete()
-      .neq('id', '');
-    if (deleteError) throw deleteError;
-    return await this.seedProducts();
   },
 
   async addProduct(productData: Omit<Product, 'id'>): Promise<Product> {
@@ -266,7 +220,6 @@ export const databaseService = {
   },
 
   async deleteProduct(id: string): Promise<void> {
-    if (!isSupabaseConfigured) {
     if (!isSupabaseConfigured) return;
     try {
       const res = await fetch('/api/admin-delete-products', {

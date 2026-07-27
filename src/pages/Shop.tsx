@@ -4,7 +4,6 @@ import { useStore } from '../context/StoreContext';
 import { Heart, Eye, ShoppingBag, Star, X } from 'lucide-react';
 import { Breadcrumb } from '../components/Breadcrumb';
 import type { Product } from '../data/products';
-import { INITIAL_PRODUCTS } from '../data/products';
 
 const SkeletonCard = () => (
   <div style={{ borderRadius: '12px', overflow: 'hidden', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)' }}>
@@ -61,7 +60,7 @@ export const Shop: React.FC = () => {
 
   // Filtered and sorted products
   const filteredProducts = useMemo(() => {
-    const list = (products && products.length > 0) ? products : INITIAL_PRODUCTS;
+    const list = products || [];
     return list
       .filter((p) => {
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 

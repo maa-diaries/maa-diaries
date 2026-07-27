@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Product } from '../data/products';
-import { INITIAL_PRODUCTS } from '../data/products';
 import { databaseService } from '../services/database';
 import type { Order, OrderItem, Inquiry, ProductReview, Coupon, SiteSettings } from '../services/database';
 import { defaultSiteSettings } from '../services/siteSettings';
@@ -101,7 +100,6 @@ interface StoreContextType {
   addCategory: (name: string) => Promise<void>;
   deleteCategory: (name: string) => Promise<void>;
   refreshCategories: () => Promise<void>;
-  resetAndSeedProducts: () => Promise<void>;
   siteSettings: SiteSettings;
   refreshSiteSettings: () => Promise<void>;
   saveSiteSettings: (settings: SiteSettings) => Promise<void>;
@@ -122,7 +120,7 @@ interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -305,16 +303,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       }
 
-      // 2. Generate custom 6-digit OTP code
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-
-      // 3. Send verification email via Resend
+      // 2. Dispatch OTP via serverless API (OTP is stored securely server-side)
       try {
-        await sendEmailViaResend('verification', { name: profile.name, email: profile.email, code });
+        const otpRes = await fetch('/api/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: profile.email })
+        });
+        if (!otpRes.ok) {
+          const errData = await otpRes.json();
+          return { success: false, message: errData.error || "Failed to send verification email." };
+        }
         return {
           success: true,
           needsVerification: true,
-          verificationCode: code,
           message: "A 6-digit verification code has been sent to your email. Please enter it to complete registration."
         };
       } catch (err: any) {
@@ -474,11 +476,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const deleteCategory = async (name: string) => {
     await databaseService.deleteCategory(name);
     await refreshCategories();
-  };
-
-  const resetAndSeedProducts = async () => {
-    await databaseService.resetAndSeedProducts();
-    await refreshProducts();
   };
 
   const refreshSiteSettings = async () => {
@@ -920,7 +917,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       addCategory,
       deleteCategory,
       refreshCategories,
-      resetAndSeedProducts,
       siteSettings,
       refreshSiteSettings,
       saveSiteSettings,

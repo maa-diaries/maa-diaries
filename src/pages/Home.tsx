@@ -8,7 +8,6 @@ import {
 import { ProductCard } from '../components/ProductCard';
 import { databaseService } from '../services/database';
 import { getVisibleDefaultReviews } from '../data/defaultReviews';
-import { INITIAL_PRODUCTS } from '../data/products';
 
 const defaultCategories = [
   { id: 'earrings', name: 'Earrings', desc: 'Western & Traditional', image: 'https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=400&q=80' },
@@ -211,7 +210,7 @@ export const Home: React.FC = () => {
   const categories = [...defaultCategories, ...customHomeCategories.filter(c => !defaultCategories.some(d => d.id === c.id))];
 
   // Filtering products — use admin-selected IDs or fall back to curated top 8 items
-  const productList = (products && products.length > 0) ? products : INITIAL_PRODUCTS;
+  const productList = products || [];
   const newArrivals = siteSettings.homeNewArrivals && siteSettings.homeNewArrivals.length > 0
     ? siteSettings.homeNewArrivals.map(id => productList.find(p => p.id === id)).filter(Boolean) as typeof productList
     : productList.slice(0, 8);
