@@ -61,13 +61,13 @@ export default async function handler(req: any, res: any) {
 
     if (!salt) {
       console.error('PAYU_MERCHANT_SALT environment variable is missing.');
-      return res.redirect(`${baseUrl}/#payment_status=warning&reason=salt_missing`);
+      return res.redirect(303, `${baseUrl}/#payment_status=warning&reason=salt_missing`);
     }
 
     // Verify key matches process.env.PAYU_MERCHANT_KEY if configured
     if (merchantKey && key && key.trim() !== merchantKey) {
       console.error('Merchant key mismatch in PayU callback.');
-      return res.redirect(`${baseUrl}/#payment_status=failure&reason=key_mismatch`);
+      return res.redirect(303, `${baseUrl}/#payment_status=failure&reason=key_mismatch`);
     }
 
     // Official PayU Response Hash Formula (reverse order):
@@ -90,6 +90,7 @@ export default async function handler(req: any, res: any) {
       firstname || '',
       productinfo || '',
       amount || '',
+      txnid || '',
       key || merchantKey || ''
     ];
 
@@ -105,7 +106,7 @@ export default async function handler(req: any, res: any) {
 
     if (!isValid) {
       console.error('PayU hash verification failed.', { calculatedHash, receivedHash: hash });
-      return res.redirect(`${baseUrl}/#payment_status=failure&txnid=${txnid || ''}&reason=hash_mismatch`);
+      return res.redirect(303, `${baseUrl}/#payment_status=failure&txnid=${txnid || ''}&reason=hash_mismatch`);
     }
 
     const isSuccess = status === 'success';
@@ -150,14 +151,14 @@ export default async function handler(req: any, res: any) {
     }
 
     if (isSuccess && amountVerified) {
-      return res.redirect(`${baseUrl}/#payment_status=success&txnid=${txnid}&payuid=${payId}`);
+      return res.redirect(303, `${baseUrl}/#payment_status=success&txnid=${txnid}&payuid=${payId}`);
     } else {
       const reason = !amountVerified ? 'amount_mismatch' : 'payment_failed';
-      return res.redirect(`${baseUrl}/#payment_status=failure&txnid=${txnid}&reason=${reason}`);
+      return res.redirect(303, `${baseUrl}/#payment_status=failure&txnid=${txnid}&reason=${reason}`);
     }
   } catch (error: any) {
     console.error('Error handling PayU callback:', error);
     const baseUrl = (process.env.BASE_URL || 'http://localhost:5173').trim();
-    return res.redirect(`${baseUrl}/#payment_status=failure&reason=server_error`);
+    return res.redirect(303, `${baseUrl}/#payment_status=failure&reason=server_error`);
   }
 }
