@@ -1433,6 +1433,11 @@ export const AdminPortal: React.FC = () => {
       {/* 3. ORDERS */}
       {activeTab === 'orders' && (() => {
         const filteredOrders = orders.filter(o => {
+          // Hide unpaid online orders (abandoned checkouts)
+          if (o.paymentMethod === 'Online' && o.paymentStatus !== 'Paid') {
+            return false;
+          }
+          
           const matchesSearch = 
             o.id.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
             o.customerName.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
