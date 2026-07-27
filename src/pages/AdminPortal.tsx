@@ -614,23 +614,25 @@ export const AdminPortal: React.FC = () => {
   };
 
   // --- Analytical Aggregations ---
-  const revenue = orders.reduce((sum, o) => o.status !== 'Cancelled' ? sum + o.totalAmount : sum, 0);
-  const pendingOrdersCount = orders.filter(o => o.status === 'Pending').length;
-  const deliveredOrdersCount = orders.filter(o => o.status === 'Delivered').length;
-  const cancelledOrdersCount = orders.filter(o => o.status === 'Cancelled').length;
+  const validOrders = orders.filter(o => !(o.paymentMethod === 'Online' && o.paymentStatus !== 'Paid'));
+  
+  const revenue = validOrders.reduce((sum, o) => o.status !== 'Cancelled' ? sum + o.totalAmount : sum, 0);
+  const pendingOrdersCount = validOrders.filter(o => o.status === 'Pending').length;
+  const deliveredOrdersCount = validOrders.filter(o => o.status === 'Delivered').length;
+  const cancelledOrdersCount = orders.filter(o => o.status === 'Cancelled').length; // Keep all cancelled orders for the metric
 
   // Today's stats
   const todayStr = new Date().toISOString().slice(0, 10);
-  const todayOrders = orders.filter(o => o.createdAt && o.createdAt.startsWith(todayStr));
+  const todayOrders = validOrders.filter(o => o.createdAt && o.createdAt.startsWith(todayStr));
   const todayOrdersCount = todayOrders.length;
   const todaySales = todayOrders.reduce((sum, o) => o.status !== 'Cancelled' ? sum + o.totalAmount : sum, 0);
 
   // COD & Online payments calculations
-  const codOrders = orders.filter(o => o.paymentMethod === 'COD');
+  const codOrders = validOrders.filter(o => o.paymentMethod === 'COD');
   const codCount = codOrders.length;
   const codAmount = codOrders.reduce((sum, o) => o.status !== 'Cancelled' ? sum + o.totalAmount : sum, 0);
 
-  const onlineOrders = orders.filter(o => o.paymentMethod === 'Online');
+  const onlineOrders = validOrders.filter(o => o.paymentMethod === 'Online');
   const onlineCount = onlineOrders.length;
   const onlineAmount = onlineOrders.reduce((sum, o) => o.status !== 'Cancelled' ? sum + o.totalAmount : sum, 0);
 
@@ -1920,11 +1922,11 @@ export const AdminPortal: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                   <span>Settled & Paid:</span>
-                  <span style={{ fontWeight: 600, color: '#27ae60' }}>{orders.filter(o => o.paymentStatus === 'Paid').length} Orders</span>
+                  <span style={{ fontWeight: 600, color: '#27ae60' }}>{validOrders.filter(o => o.paymentStatus === 'Paid').length} Orders</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                   <span>Payment Pending:</span>
-                  <span style={{ fontWeight: 600, color: '#e67e22' }}>{orders.filter(o => o.paymentStatus === 'Pending').length} Orders</span>
+                  <span style={{ fontWeight: 600, color: '#e67e22' }}>{validOrders.filter(o => o.paymentStatus === 'Pending').length} Orders</span>
                 </div>
               </div>
             </div>
@@ -1947,8 +1949,14 @@ export const AdminPortal: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map(o => (
-                    <tr key={o.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                  {orders.filter(o => !(o.paymentMethod === 'Online' && o.paymentStatus === 'Pending')).map(o => {
+                    const isCancelled = o.status === 'Cancelled' || o.paymentStatus === 'Failed';
+                    return (
+                    <tr key={o.id} style={{ 
+                      borderBottom: '1px solid var(--border-light)',
+                      backgroundColor: isCancelled ? 'rgba(231, 76, 60, 0.05)' : 'transparent',
+                      color: isCancelled ? '#c0392b' : 'inherit'
+                    }}>
                       <td style={{ padding: '12px', fontWeight: 600 }}>{o.id}</td>
                       <td style={{ padding: '12px' }}>{o.customerName}</td>
                       <td style={{ padding: '12px' }}>
@@ -1983,7 +1991,8 @@ export const AdminPortal: React.FC = () => {
                       </td>
                       <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: 'var(--gold-primary)' }}>₹ {o.totalAmount}</td>
                     </tr>
-                  ))}
+                  );
+                  })}
                   {orders.length === 0 && (
                     <tr>
                       <td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>No transactions found.</td>
