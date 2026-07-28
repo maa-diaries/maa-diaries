@@ -1431,9 +1431,26 @@ export const AdminPortal: React.FC = () => {
                       for (let i = 0; i < productsToUpdate.length; i++) {
                         const p = productsToUpdate[i];
                         try {
-                          // Match by product name instead of ID, in case the IDs changed during CSV import
-                          const { data } = await oldDb.from('products').select('image').eq('name', p.name).maybeSingle();
-                          if (data && data.image && data.image.length > 100) {
+                          // Try to find the exact matching product in the old DB
+                          let oldData = null;
+                          
+                          // 1. Try matching by exact ID
+                          const { data: byId } = await oldDb.from('products').select('image').eq('id', p.id).maybeSingle();
+                          if (byId && byId.image) oldData = byId;
+
+                          // 2. Fallback to SKU
+                          if (!oldData && p.sku) {
+                            const { data: bySku } = await oldDb.from('products').select('image').eq('sku', p.sku).maybeSingle();
+                            if (bySku && bySku.image) oldData = bySku;
+                          }
+
+                          // 3. Fallback to Name
+                          if (!oldData) {
+                            const { data: byName } = await oldDb.from('products').select('image').eq('name', p.name).maybeSingle();
+                            if (byName && byName.image) oldData = byName;
+                          }
+
+                          if (oldData && oldData.image && oldData.image.length > 100) {
                             
                             // Compress Image
                             const img = new Image();
