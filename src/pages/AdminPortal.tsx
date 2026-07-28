@@ -1041,25 +1041,85 @@ export const AdminPortal: React.FC = () => {
                 <Plus size={16} /> Add Product
               </button>
               {products.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleDeleteAllProducts}
-                  style={{
-                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                    border: '1px solid #e74c3c',
-                    color: '#c0392b',
-                    borderRadius: '6px',
-                    padding: '10px 16px',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <Trash2 size={14} /> Clear All Database Products ({products.length})
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!window.confirm(`Are you sure you want to optimize all ${products.length} product images? This may take a moment.`)) return;
+                      let successCount = 0;
+                      for (const p of products) {
+                        if (!p.image || p.image.length < 50000) continue; // Skip if empty or already very small (e.g., < 50KB)
+                        try {
+                          await new Promise<void>((resolve, reject) => {
+                            const img = new Image();
+                            img.onload = async () => {
+                              try {
+                                const canvas = document.createElement('canvas');
+                                const MAX_WIDTH = 800;
+                                const scaleSize = Math.min(1, MAX_WIDTH / img.width);
+                                canvas.width = img.width * scaleSize;
+                                canvas.height = img.height * scaleSize;
+                                
+                                const ctx = canvas.getContext('2d');
+                                ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                
+                                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                                
+                                if (compressedBase64.length < p.image.length) {
+                                  await databaseService.updateProduct({ ...p, image: compressedBase64 });
+                                  successCount++;
+                                }
+                                resolve();
+                              } catch (e) {
+                                reject(e);
+                              }
+                            };
+                            img.onerror = () => resolve(); // Skip if image is broken
+                            img.src = p.image;
+                          });
+                        } catch (e) {
+                          console.error("Failed to optimize product", p.id, e);
+                        }
+                      }
+                      showToast(`Successfully optimized ${successCount} product images!`, 'success');
+                      refreshProducts(); // Refresh the list
+                    }}
+                    style={{
+                      backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                      border: '1px solid #2ecc71',
+                      color: '#27ae60',
+                      borderRadius: '6px',
+                      padding: '10px 16px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <Settings size={14} /> Optimize All Images
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteAllProducts}
+                    style={{
+                      backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                      border: '1px solid #e74c3c',
+                      color: '#c0392b',
+                      borderRadius: '6px',
+                      padding: '10px 16px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <Trash2 size={14} /> Clear All Database Products ({products.length})
+                  </button>
+                </>
               )}
             </div>
           )}
