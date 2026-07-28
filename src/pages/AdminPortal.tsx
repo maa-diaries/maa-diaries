@@ -1426,7 +1426,8 @@ export const AdminPortal: React.FC = () => {
                       
                       for (const p of productsToUpdate) {
                         try {
-                          const { data } = await oldDb.from('products').select('image').eq('id', p.id).single();
+                          // Match by product name instead of ID, in case the IDs changed during CSV import
+                          const { data } = await oldDb.from('products').select('image').eq('name', p.name).maybeSingle();
                           if (data && data.image && data.image.length > 100) {
                             
                             // Compress Image
