@@ -1454,7 +1454,7 @@ export const AdminPortal: React.FC = () => {
                             
                             // Compress Image
                             const img = new Image();
-                            img.src = data.image;
+                            img.src = oldData.image;
                             await new Promise(res => { img.onload = res; img.onerror = res; });
                             
                             const canvas = document.createElement('canvas');
