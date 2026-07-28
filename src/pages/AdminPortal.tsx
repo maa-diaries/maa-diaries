@@ -314,7 +314,7 @@ export const AdminPortal: React.FC = () => {
     : products.slice(0, 20);
   const bulkDefaults: Record<string, { price: number, desc: string }> = {
     'kashmiri_jhumke': { price: 139, desc: 'Exquisite handcrafted Kashmiri Jhumke, designed with intricate details. Premium anti-tarnish finish for long-lasting shine.' },
-    'earrings': { price: 69, desc: 'Elegant and trendy earrings. Lightweight, hypoallergenic, and perfect for everyday wear.' },
+    'korean_earrings': { price: 69, desc: 'Elegant and trendy Korean style earrings. Lightweight, hypoallergenic, and perfect for everyday wear.' },
     'necklaces': { price: 119, desc: 'Stunning premium necklace with a beautiful anti-tarnish finish. Perfect for special occasions and daily elegance.' },
     'payals': { price: 79, desc: 'Traditional yet modern Payals (Anklets). Crafted for durability and lasting shine with water-resistant coating.' },
     'bracelets': { price: 89, desc: 'Beautifully crafted premium bracelet. Anti-tarnish finish.' }
