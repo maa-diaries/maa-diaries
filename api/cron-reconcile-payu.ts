@@ -86,7 +86,8 @@ export default async function handler(req: any, res: any) {
                 .from('orders')
                 .update({
                   payment_status: 'Paid',
-                  status: 'Processing',
+                  // Reconciled payment is valid, but still awaits admin fulfilment.
+                  status: 'Pending',
                   payu_id: transactionDetails.mihpayid || transactionDetails.payuMoneyId || txnid
                 })
                 .eq('id', orderId);

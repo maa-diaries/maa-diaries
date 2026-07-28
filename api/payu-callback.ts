@@ -135,7 +135,9 @@ export default async function handler(req: any, res: any) {
         }
 
         const finalPaymentStatus = (isSuccess && amountVerified) ? 'Paid' : 'Failed';
-        const finalOrderStatus = (isSuccess && amountVerified) ? 'Processing' : 'Cancelled';
+        // Payment is complete, but fulfilment has not started until an admin
+        // reviews the order and advances it from Pending.
+        const finalOrderStatus = (isSuccess && amountVerified) ? 'Pending' : 'Cancelled';
 
         await supabaseAdmin
           .from('orders')
