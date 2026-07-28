@@ -1387,6 +1387,51 @@ export const AdminPortal: React.FC = () => {
 
             {/* Categories filters for easy selection */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  type="button"
+                  onClick={() => { resetForm(); setEditingProduct(null); setShowAddForm(true); }}
+                  style={{
+                    backgroundColor: 'var(--gold-primary)',
+                    border: 'none',
+                    color: 'white',
+                    borderRadius: '6px',
+                    padding: '10px 16px',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Plus size={16} /> Add Product
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!window.confirm("Run emergency database fix? This will wipe the image of the most recently added product to fix timeouts.")) return;
+                    await databaseService.emergencyClearLargeImages();
+                    showToast("Emergency fix applied! Reloading products...", "success");
+                    refreshProducts();
+                  }}
+                  style={{
+                    backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                    border: '1px solid #f39c12',
+                    color: '#d35400',
+                    borderRadius: '6px',
+                    padding: '10px 16px',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Settings size={16} /> Emergency Fix DB
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => setSelectedProductCategory('all')}
