@@ -78,7 +78,7 @@ export default async function handler(req: any, res: any) {
           });
 
           if (payuRes.ok) {
-            const payuData = await payuRes.json();
+            const payuData = (await payuRes.json()) as any;
             const transactionDetails = payuData?.transaction_details?.[txnid];
 
             if (transactionDetails && transactionDetails.status === 'success') {

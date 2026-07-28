@@ -43,7 +43,7 @@ export default async function handler(req: any, res: any) {
       return res.status(502).json({ error: 'Failed to fetch Instagram embed data. The post may be private or unavailable.' });
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as any;
 
     let postType: 'post' | 'reel' | 'unknown' = 'unknown';
     if (url.includes('/reel/')) postType = 'reel';

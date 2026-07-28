@@ -47,7 +47,8 @@ export async function rateLimit(
     });
     
     if (!incrRes.ok) throw new Error("Redis INCR failed");
-    const { result: count } = await incrRes.json();
+    const data = (await incrRes.json()) as any;
+    const count = data.result;
 
     // If it's the first hit, set expiration
     if (count === 1) {

@@ -104,7 +104,7 @@ export default async function handler(req: any, res: any) {
       }
     }
 
-    let emailData: { from: string; to: string; subject: string; html: string } | null = null;
+    // emailData removed
 
     if (type === 'order') {
       const { order } = payload;

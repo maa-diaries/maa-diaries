@@ -1426,7 +1426,7 @@ export const AdminPortal: React.FC = () => {
                       
                       for (const p of productsToUpdate) {
                         try {
-                          const { data, error } = await oldDb.from('products').select('image').eq('id', p.id).single();
+                          const { data } = await oldDb.from('products').select('image').eq('id', p.id).single();
                           if (data && data.image && data.image.length > 100) {
                             
                             // Compress Image
@@ -1448,7 +1448,7 @@ export const AdminPortal: React.FC = () => {
                                ctx.drawImage(img, 0, 0, width, height);
                                const compressedBase64 = canvas.toDataURL('image/webp', 0.6);
                                
-                               await databaseService.updateProduct(p.id, { image: compressedBase64 });
+                               await databaseService.updateProduct({ ...p, image: compressedBase64 });
                                count++;
                             }
                           }
