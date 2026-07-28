@@ -2,8 +2,8 @@ import { createHash } from 'crypto';
 import { rateLimit } from './_rateLimit.js';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://zqlioygunslwnwyfeftw.supabase.co';
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbGlveWd1bnNsd253eWZlZnR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNDEyMjEsImV4cCI6MjEwMDgxNzIyMX0.du7Buy_UGYCjwLXYFnEmCCZbi6jUq_8mQctMmEB09AQ';
 
 const supabaseAdmin = (supabaseUrl && serviceRoleKey)
   ? createClient(supabaseUrl, serviceRoleKey)
@@ -55,7 +55,7 @@ export default async function handler(req: any, res: any) {
     // Store server-side
     if (supabaseAdmin) {
       try {
-        await supabaseAdmin
+        const { error: insertErr } = await supabaseAdmin
           .from('otp_codes')
           .insert({
             email: cleanEmail,
@@ -63,6 +63,7 @@ export default async function handler(req: any, res: any) {
             expires_at: expiresAt.toISOString(),
             used: false
           });
+        if (insertErr) throw insertErr;
       } catch (dbErr) {
         console.error('Failed to store OTP in Supabase, using memory fallback:', dbErr);
         inMemoryOtpStore.set(cleanEmail, { codeHash, expiresAt: expiresAt.getTime() });

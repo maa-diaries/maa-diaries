@@ -2,8 +2,8 @@ import { rateLimit } from './_rateLimit.js';
 import { createClient } from '@supabase/supabase-js';
 import { getOtpHash } from './send-otp.js';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://zqlioygunslwnwyfeftw.supabase.co';
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbGlveWd1bnNsd253eWZlZnR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNDEyMjEsImV4cCI6MjEwMDgxNzIyMX0.du7Buy_UGYCjwLXYFnEmCCZbi6jUq_8mQctMmEB09AQ';
 
 const supabaseAdmin = (supabaseUrl && serviceRoleKey)
   ? createClient(supabaseUrl, serviceRoleKey)
