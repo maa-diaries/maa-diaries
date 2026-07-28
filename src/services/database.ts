@@ -145,6 +145,17 @@ export const databaseService = {
     if (!isSupabaseConfigured) {
       return [];
     }
+
+    try {
+      const res = await fetch('/api/products');
+      if (res.ok) {
+        const data = await res.json();
+        return (data || []).map(mapProduct);
+      }
+    } catch (e) {
+      // Ignore cache fetch error and fallback to direct db
+    }
+
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -624,6 +635,20 @@ export const databaseService = {
       return local ? JSON.parse(local) : defaultCategories;
     };
     if (!isSupabaseConfigured) return getLocal();
+    try {
+      const res = await fetch('/api/categories');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          const list = data.map((name: string) => name.toLowerCase());
+          localStorage.setItem('md_categories', JSON.stringify(list));
+          return list;
+        }
+      }
+    } catch (e) {
+      // Ignore cache fetch error and fallback to direct db
+    }
+
     try {
       const { data, error } = await supabase
         .from('categories')
