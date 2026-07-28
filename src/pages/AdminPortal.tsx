@@ -9,7 +9,7 @@ import type { InstagramFeedItem } from '../services/siteSettings';
 import { 
   Lock, Trash2, Edit3, Plus, Package, Clock, DollarSign, 
   Eye, X, Check, Truck, CreditCard, Settings, Percent,
-  XCircle, Star, MessageSquare, ArrowUp, ArrowDown, Home, Search, Globe
+  XCircle, Star, MessageSquare, ArrowUp, ArrowDown, Home, Search, Globe, Download
 } from 'lucide-react';
 import { DEFAULT_REVIEWS, getDeletedDefaultReviewIds, markDefaultReviewDeleted } from '../data/defaultReviews';
 
@@ -1406,6 +1406,77 @@ export const AdminPortal: React.FC = () => {
                   }}
                 >
                   <Plus size={16} /> Add Product
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const oldUrl = prompt("Enter OLD Supabase URL (e.g. https://jqosh...):");
+                    if (!oldUrl) return;
+                    const oldKey = prompt("Enter OLD Supabase Anon Key:");
+                    if (!oldKey) return;
+
+                    showToast("Starting Image Migration... Do not close this page.", "success");
+                    
+                    try {
+                      const { createClient } = await import('@supabase/supabase-js');
+                      const oldDb = createClient(oldUrl, oldKey);
+                      
+                      const productsToUpdate = products;
+                      let count = 0;
+                      
+                      for (const p of productsToUpdate) {
+                        try {
+                          const { data, error } = await oldDb.from('products').select('image').eq('id', p.id).single();
+                          if (data && data.image && data.image.length > 100) {
+                            
+                            // Compress Image
+                            const img = new Image();
+                            img.src = data.image;
+                            await new Promise(res => { img.onload = res; img.onerror = res; });
+                            
+                            const canvas = document.createElement('canvas');
+                            let width = img.width || 800;
+                            let height = img.height || 800;
+                            if (width > 800) {
+                              height = Math.round(height * (800 / width));
+                              width = 800;
+                            }
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            if (ctx) {
+                               ctx.drawImage(img, 0, 0, width, height);
+                               const compressedBase64 = canvas.toDataURL('image/webp', 0.6);
+                               
+                               await databaseService.updateProduct(p.id, { image: compressedBase64 });
+                               count++;
+                            }
+                          }
+                        } catch (err) {
+                           console.error("Failed to migrate product", p.id, err);
+                        }
+                      }
+                      showToast(`Migration complete! Successfully migrated ${count} images.`, "success");
+                      refreshProducts();
+                    } catch (err: any) {
+                      showToast("Migration error: " + err.message, "error");
+                    }
+                  }}
+                  style={{
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    border: '1px solid #3498db',
+                    color: '#2980b9',
+                    borderRadius: '6px',
+                    padding: '10px 16px',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Download size={16} /> Auto-Migrate Images
                 </button>
                 <button
                   type="button"
