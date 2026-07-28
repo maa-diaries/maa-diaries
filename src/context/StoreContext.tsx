@@ -41,7 +41,7 @@ export interface UserProfile {
 interface StoreContextType {
   products: Product[];
   productsLoading: boolean;
-  refreshProducts: () => void;
+  refreshProducts: (forceRefresh?: boolean) => Promise<void>;
   cart: CartItem[];
   addToCart: (item: Omit<CartItem, 'key'>) => void;
   removeFromCart: (key: string) => void;
@@ -451,10 +451,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Load initial data
-  const refreshProducts = async () => {
+  const refreshProducts = async (forceRefresh = false) => {
     setProductsLoading(true);
     try {
-      const data = await databaseService.getProducts();
+      const data = await databaseService.getProducts(forceRefresh);
       setProducts(data);
     } catch (e: any) {
       console.error("Error loading products:", e);
@@ -463,7 +463,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         await databaseService.emergencyClearLargeImages();
         // Retry once
         try {
-          const data2 = await databaseService.getProducts();
+          const data2 = await databaseService.getProducts(true);
           setProducts(data2);
         } catch (e2) {
           console.error("Failed to load products even after emergency fix:", e2);

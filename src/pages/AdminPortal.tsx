@@ -396,7 +396,7 @@ export const AdminPortal: React.FC = () => {
         setBulkProgress({ current: i + 1, total: files.length });
       }
       showToast(`Successfully created ${count} products!`, 'success');
-      refreshProducts();
+      await refreshProducts(true);
     } catch (err: any) {
       showToast('Bulk upload failed: ' + err.message, 'error');
     } finally {
@@ -487,7 +487,7 @@ export const AdminPortal: React.FC = () => {
       };
 
       await databaseService.addProduct(newProductData);
-      await refreshProducts();
+      await refreshProducts(true);
       resetForm();
       setShowAddForm(false);
     } catch (err) {
@@ -531,7 +531,7 @@ export const AdminPortal: React.FC = () => {
       };
 
       await databaseService.updateProduct(updated);
-      await refreshProducts();
+      await refreshProducts(true);
       resetForm();
       setEditingProduct(null);
     } catch (err) {
@@ -546,7 +546,7 @@ export const AdminPortal: React.FC = () => {
       setIsPending(true);
       try {
         await databaseService.deleteProduct(id);
-        await refreshProducts();
+        await refreshProducts(true);
       } catch (err) {
         console.error("Failed to delete product:", err);
       } finally {

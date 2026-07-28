@@ -141,13 +141,15 @@ function validateOrderTotal(items: { product: { price: number }; quantity: numbe
 
 export const databaseService = {
   // --- Products API ---
-  async getProducts(): Promise<Product[]> {
+  async getProducts(forceRefresh = false): Promise<Product[]> {
     if (!isSupabaseConfigured) {
       return [];
     }
 
     try {
-      const res = await fetch('/api/products');
+      // Admin mutations must not read a browser/CDN-cached catalog response.
+      const url = forceRefresh ? `/api/products?refresh=${Date.now()}` : '/api/products';
+      const res = await fetch(url, { cache: forceRefresh ? 'no-store' : 'default' });
       if (res.ok) {
         const data = await res.json();
         const products = (data || []).map(mapProduct);
