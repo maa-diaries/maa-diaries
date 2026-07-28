@@ -718,7 +718,11 @@ export const AdminPortal: React.FC = () => {
   };
 
   // --- Analytical Aggregations ---
-  const validOrders = orders.filter(o => !(o.paymentMethod === 'Online' && o.paymentStatus !== 'Paid'));
+  // An online order is real only after payment succeeds. COD orders are real
+  // orders when placed and are collected at delivery.
+  const validOrders = orders.filter(o =>
+    o.paymentMethod === 'COD' || (o.paymentMethod === 'Online' && o.paymentStatus === 'Paid')
+  );
   
   const revenue = validOrders.reduce((sum, o) => o.status !== 'Cancelled' ? sum + o.totalAmount : sum, 0);
   const pendingOrdersCount = validOrders.filter(o => o.status === 'Pending').length;
@@ -1003,7 +1007,7 @@ export const AdminPortal: React.FC = () => {
               </div>
               <div>
                 <span style={{ fontSize: '0.7rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Total Orders</span>
-                <h4 style={{ fontSize: '1.3rem', fontWeight: 600, color: '#1a1a1a', marginTop: '4px' }}>{orders.length} Placed</h4>
+                <h4 style={{ fontSize: '1.3rem', fontWeight: 600, color: '#1a1a1a', marginTop: '4px' }}>{validOrders.length} Placed</h4>
               </div>
             </div>
 
@@ -1085,7 +1089,7 @@ export const AdminPortal: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.slice(0, 5).map(o => (
+                  {validOrders.slice(0, 5).map(o => (
                     <tr key={o.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
                       <td style={{ padding: '12px', fontWeight: 600 }}>{o.id}</td>
                       <td style={{ padding: '12px' }}>{o.customerName}</td>
@@ -1103,9 +1107,9 @@ export const AdminPortal: React.FC = () => {
                       <td style={{ padding: '12px', fontSize: '0.8rem' }}>{o.paymentMethod}</td>
                     </tr>
                   ))}
-                  {orders.length === 0 && (
+                  {validOrders.length === 0 && (
                     <tr>
-                      <td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>No orders placed yet.</td>
+                      <td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>No successful or COD orders placed yet.</td>
                     </tr>
                   )}
                 </tbody>
