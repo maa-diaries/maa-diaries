@@ -77,7 +77,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, sh
           <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#fff' }}>{product.rating}</span>
         </div>
       )}
-      {showRating && product.reviewsCount === 0 && (
+      {showRating && product.reviewsCount === 0 && !badge && (
         <div style={{
           position: 'absolute',
           top: badge ? '42px' : '12px',

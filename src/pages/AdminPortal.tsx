@@ -87,9 +87,9 @@ export const AdminPortal: React.FC = () => {
     { id: 'necklaces', name: 'Necklaces', desc: 'Chains & Chokers', image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=400&q=80' },
     { id: 'bracelets', name: 'Bracelets', desc: 'Delicate wristwear', image: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=400&q=80' },
     { id: 'pendants', name: 'Pendants', desc: 'Minimalist statement charms', image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=400&q=80' },
-    { id: 'payals', name: 'Payals (Anklets)', desc: 'Melodious tradition', image: 'https://images.unsplash.com/photo-1599643477874-5c866f466b0a?auto=format&fit=crop&w=400&q=80' },
+    { id: 'payals', name: 'Payals (Anklets)', desc: 'Melodious tradition', image: 'https://images.unsplash.com/photo-1611652022419-a9419f74343d?auto=format&fit=crop&w=400&q=80' },
     { id: 'kashmiri jhumke', name: 'Kashmiri Jhumke', desc: 'Intricate royal bells', image: 'https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=400&q=80' },
-    { id: 'hair accessories', name: 'Hair Accessories', desc: 'Elegant clips & pins', image: 'https://images.unsplash.com/photo-1590737083049-ecf72e90c884?auto=format&fit=crop&w=400&q=80' }
+    { id: 'hair accessories', name: 'Hair Accessories', desc: 'Elegant clips & pins', image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=400&q=80' }
   ];
   const [homeCategories, setHomeCategories] = useState(siteSettings.homeCategories || []);
   const [newCatName, setNewCatName] = useState('');

@@ -9,14 +9,28 @@ import { ProductCard } from '../components/ProductCard';
 import { databaseService } from '../services/database';
 import { getVisibleDefaultReviews } from '../data/defaultReviews';
 
+const getInstagramEmbedUrl = (url: string) => {
+  try {
+    const instagramUrl = new URL(url);
+    // Shared reel links often have ?igsh= tracking data, which must not be
+    // included before /embed/ or Instagram treats the iframe URL as invalid.
+    instagramUrl.search = '';
+    instagramUrl.hash = '';
+    instagramUrl.hostname = 'www.instagram.com';
+    return `${instagramUrl.toString().replace(/\/$/, '')}/embed/`;
+  } catch {
+    return url;
+  }
+};
+
 const defaultCategories = [
   { id: 'earrings', name: 'Earrings', desc: 'Western & Traditional', image: 'https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=400&q=80' },
   { id: 'necklaces', name: 'Necklaces', desc: 'Chains & Chokers', image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=400&q=80' },
   { id: 'bracelets', name: 'Bracelets', desc: 'Delicate wristwear', image: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=400&q=80' },
   { id: 'pendants', name: 'Pendants', desc: 'Minimalist statement charms', image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=400&q=80' },
-  { id: 'payals', name: 'Payals (Anklets)', desc: 'Melodious tradition', image: 'https://images.unsplash.com/photo-1599643477874-5c866f466b0a?auto=format&fit=crop&w=400&q=80' },
+  { id: 'payals', name: 'Payals (Anklets)', desc: 'Melodious tradition', image: 'https://images.unsplash.com/photo-1611652022419-a9419f74343d?auto=format&fit=crop&w=400&q=80' },
   { id: 'kashmiri jhumke', name: 'Kashmiri Jhumke', desc: 'Intricate royal bells', image: 'https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=400&q=80' },
-  { id: 'hair accessories', name: 'Hair Accessories', desc: 'Elegant clips & pins', image: 'https://images.unsplash.com/photo-1590737083049-ecf72e90c884?auto=format&fit=crop&w=400&q=80' }
+  { id: 'hair accessories', name: 'Hair Accessories', desc: 'Elegant clips & pins', image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=400&q=80' }
 ];
 
 export const Home: React.FC = () => {
@@ -604,7 +618,7 @@ export const Home: React.FC = () => {
 
         <div ref={bestSellersRef} className="home-product-carousel" style={{ display: 'flex', gap: '12px', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '8px', scrollbarWidth: 'none' }}>
           {bestSellers.map((prod) => (
-            <ProductCard key={prod.id} product={prod} showRating />
+            <ProductCard key={prod.id} product={prod} showRating badge={{ label: 'BEST SELLER', color: 'rgba(176,141,87,0.92)' }} />
           ))}
         </div>
       </div>
@@ -822,7 +836,7 @@ export const Home: React.FC = () => {
             </button>
             <div style={{ width: '100%', paddingBottom: '120%', position: 'relative' }}>
               <iframe
-                src={`${igModalUrl}embed/`}
+                src={getInstagramEmbedUrl(igModalUrl)}
                 style={{
                   position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
                   border: 'none'
