@@ -306,13 +306,30 @@ export const AdminPortal: React.FC = () => {
     : products.slice(0, 20);
   const addCoupon = async (e: React.FormEvent) => { e.preventDefault(); const code = couponCode.trim().toUpperCase(); if (!code) return; if (coupons.some(c => c.code === code)) { showToast('This coupon code already exists.', 'error'); return; } await saveCoupon({ code, type: couponType, value: couponValue, minOrder: couponMinOrder, active: true, description: couponDescription || undefined }); showToast(`Coupon "${code}" created successfully.`, 'success'); setCouponCode(''); setCouponValue(10); setCouponMinOrder(0); setCouponType('percent'); setCouponDescription(''); };
 
-  // Mock upload simulator
+  // Compress image to prevent massive base64 strings crashing the DB
   const handleImageFile = (file?: File) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) { showToast('Please choose an image file.', 'error'); return; }
-    if (file.size > 4 * 1024 * 1024) { showToast('Please use an image smaller than 4 MB.', 'error'); return; }
+    
     const reader = new FileReader();
-    reader.onload = () => setProdImage(String(reader.result));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const scaleSize = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scaleSize;
+        
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Compress to JPEG with 70% quality (drastically reduces base64 size)
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+        setProdImage(compressedBase64);
+      };
+      img.src = e.target?.result as string;
+    };
     reader.readAsDataURL(file);
   };
 

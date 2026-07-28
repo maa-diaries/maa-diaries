@@ -154,6 +154,14 @@ export const databaseService = {
     return (data || []).map(mapProduct);
   },
 
+  async emergencyClearLargeImages(): Promise<void> {
+    if (!isSupabaseConfigured) return;
+    // We update all products to clear the image to resolve the 500 Statement Timeout
+    // This is because huge Base64 images were causing the SELECT * query to timeout
+    const { error } = await supabase.from('products').update({ image: '' }).neq('id', 'placeholder-to-update-all');
+    if (error) console.error("Failed to clear images:", error);
+  },
+
   async addProduct(productData: Omit<Product, 'id'>): Promise<Product> {
     const id = `prod-${generateId()}`;
     const newProduct: Product = {

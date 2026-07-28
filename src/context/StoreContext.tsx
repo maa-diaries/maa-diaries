@@ -450,8 +450,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Load initial data
   const refreshProducts = async () => {
-    const data = await databaseService.getProducts();
-    setProducts(data);
+    try {
+      const data = await databaseService.getProducts();
+      setProducts(data);
+    } catch (e: any) {
+      console.error("Error loading products:", e);
+      if (e?.code === '57014' || (e?.message && e.message.includes('timeout'))) {
+        console.warn("Triggering emergency image clearance due to statement timeout...");
+        await databaseService.emergencyClearLargeImages();
+        // Retry once
+        try {
+          const data2 = await databaseService.getProducts();
+          setProducts(data2);
+        } catch (e2) {
+          console.error("Failed to load products even after emergency fix:", e2);
+        }
+      }
+    }
   };
 
   const refreshOrders = async () => {
