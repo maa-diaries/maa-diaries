@@ -14,9 +14,9 @@ const defaultCategories = [
   { id: 'necklaces', name: 'Necklaces', desc: 'Chains & Chokers', image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=400&q=80' },
   { id: 'bracelets', name: 'Bracelets', desc: 'Delicate wristwear', image: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=400&q=80' },
   { id: 'pendants', name: 'Pendants', desc: 'Minimalist statement charms', image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=400&q=80' },
-  { id: 'payals', name: 'Payals', desc: 'Elegant traditional anklets', image: 'https://images.unsplash.com/photo-1543294001-f7cd5d7fb516?auto=format&fit=crop&w=400&q=80' },
-  { id: 'kashmiri_jhumke', name: 'Kashmiri Jhumke', desc: 'Intricate royal bells', image: 'https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=400&q=80' },
-  { id: 'hair_accessories', name: 'Hair Accessories', desc: 'Clutchers & Scrunchies', image: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=400&q=80' }
+  { id: 'payals', name: 'Payals (Anklets)', desc: 'Melodious tradition', image: 'https://images.unsplash.com/photo-1599643477874-5c866f466b0a?auto=format&fit=crop&w=400&q=80' },
+  { id: 'kashmiri jhumke', name: 'Kashmiri Jhumke', desc: 'Intricate royal bells', image: 'https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=400&q=80' },
+  { id: 'hair accessories', name: 'Hair Accessories', desc: 'Elegant clips & pins', image: 'https://images.unsplash.com/photo-1590737083049-ecf72e90c884?auto=format&fit=crop&w=400&q=80' }
 ];
 
 export const Home: React.FC = () => {

@@ -627,8 +627,8 @@ export const databaseService = {
       'bracelets',
       'pendants',
       'payals',
-      'kashmiri_jhumke',
-      'hair_accessories'
+      'kashmiri jhumke',
+      'hair accessories'
     ];
     const getLocal = () => {
       const local = localStorage.getItem('md_categories');
