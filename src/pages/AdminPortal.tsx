@@ -49,6 +49,13 @@ export const AdminPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [isPending, setIsPending] = useState(false);
   const [migrationProgress, setMigrationProgress] = useState<{current: number, total: number} | null>(null);
+  
+  // Bulk Upload State
+  const [isBulkUploading, setIsBulkUploading] = useState(false);
+  const [bulkCategory, setBulkCategory] = useState('kashmiri_jhumke');
+  const [bulkPrice, setBulkPrice] = useState(139);
+  const [bulkDescription, setBulkDescription] = useState('Exquisite handcrafted Kashmiri Jhumke, designed with intricate details. Premium anti-tarnish finish for long-lasting shine.');
+  const [bulkProgress, setBulkProgress] = useState<{current: number, total: number} | null>(null);
     
   // Search & Filter state for catalog list
   const [productSearch, setProductSearch] = useState('');
@@ -305,6 +312,102 @@ export const AdminPortal: React.FC = () => {
         p.category.toLowerCase().includes(homepageSearch.toLowerCase())
       )
     : products.slice(0, 20);
+  const bulkDefaults: Record<string, { price: number, desc: string }> = {
+    'kashmiri_jhumke': { price: 139, desc: 'Exquisite handcrafted Kashmiri Jhumke, designed with intricate details. Premium anti-tarnish finish for long-lasting shine.' },
+    'earrings': { price: 69, desc: 'Elegant and trendy earrings. Lightweight, hypoallergenic, and perfect for everyday wear.' },
+    'necklaces': { price: 119, desc: 'Stunning premium necklace with a beautiful anti-tarnish finish. Perfect for special occasions and daily elegance.' },
+    'payals': { price: 79, desc: 'Traditional yet modern Payals (Anklets). Crafted for durability and lasting shine with water-resistant coating.' },
+    'bracelets': { price: 89, desc: 'Beautifully crafted premium bracelet. Anti-tarnish finish.' }
+  };
+
+  const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    setIsBulkUploading(true);
+    setBulkProgress({ current: 0, total: files.length });
+    
+    try {
+      let count = 0;
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file.type.startsWith('image/')) continue;
+        
+        // Convert filename to product name (e.g. "beautiful-gold-jhumka.jpg" -> "Beautiful Gold Jhumka")
+        let prodName = file.name.split('.')[0].replace(/[-_]/g, ' ');
+        prodName = prodName.replace(/\b\w/g, c => c.toUpperCase());
+        
+        // Compress image
+        const compressedBase64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              let width = img.width || 800;
+              let height = img.height || 800;
+              if (width > 800) {
+                height = Math.round(height * (800 / width));
+                width = 800;
+              }
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/webp', 0.6));
+              } else {
+                resolve('');
+              }
+            };
+            img.onerror = () => resolve('');
+            img.src = e.target?.result as string;
+          };
+          reader.readAsDataURL(file);
+        });
+        
+        if (compressedBase64) {
+          await databaseService.addProduct({
+            name: prodName,
+            description: bulkDescription,
+            category: bulkCategory,
+            subcategory: '',
+            price: bulkPrice,
+            originalPrice: bulkPrice,
+            discount: 0,
+            image: compressedBase64,
+            metalOptions: ['18K Gold Plated'],
+            stoneOptions: [],
+            specs: {
+              metal: 'Stainless Steel',
+              coating: '18K Gold Plated',
+              stoneType: 'None',
+              durability: 'Water-resistant',
+              finish: 'Anti-tarnish'
+            },
+            isFeatured: false,
+            isFreeDelivery: true,
+            stock: 10,
+            rating: 5,
+            reviewsCount: 0,
+            sku: 'SKU-' + Math.random().toString(36).substr(2, 6).toUpperCase()
+          });
+          count++;
+        }
+        setBulkProgress({ current: i + 1, total: files.length });
+      }
+      showToast(`Successfully created ${count} products!`, 'success');
+      refreshProducts();
+    } catch (err: any) {
+      showToast('Bulk upload failed: ' + err.message, 'error');
+    } finally {
+      setIsBulkUploading(false);
+      setBulkProgress(null);
+      // Reset input
+      if (e.target) e.target.value = '';
+    }
+  };
+
   const addCoupon = async (e: React.FormEvent) => { e.preventDefault(); const code = couponCode.trim().toUpperCase(); if (!code) return; if (coupons.some(c => c.code === code)) { showToast('This coupon code already exists.', 'error'); return; } await saveCoupon({ code, type: couponType, value: couponValue, minOrder: couponMinOrder, active: true, description: couponDescription || undefined }); showToast(`Coupon "${code}" created successfully.`, 'success'); setCouponCode(''); setCouponValue(10); setCouponMinOrder(0); setCouponType('percent'); setCouponDescription(''); };
 
   // Compress image to prevent massive base64 strings crashing the DB
@@ -1041,6 +1144,18 @@ export const AdminPortal: React.FC = () => {
               >
                 <Plus size={16} /> Add Product
               </button>
+              
+              <button 
+                onClick={() => setIsBulkUploading(!isBulkUploading)}
+                style={{ 
+                  display: 'flex', gap: '8px', padding: '10px 20px', fontSize: '0.8rem',
+                  backgroundColor: isBulkUploading ? '#f8d7da' : '#e2e8f0',
+                  color: isBulkUploading ? '#721c24' : '#1e293b',
+                  border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600
+                }}
+              >
+                <Package size={16} /> {isBulkUploading ? 'Cancel Bulk Upload' : 'Bulk Create Products'}
+              </button>
               {products.length > 0 && (
                 <>
                   <button
@@ -1121,6 +1236,76 @@ export const AdminPortal: React.FC = () => {
                     <Trash2 size={14} /> Clear All Database Products ({products.length})
                   </button>
                 </>
+              )}
+            </div>
+          )}
+
+          {isBulkUploading && (
+            <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <h3 style={{ margin: '0 0 16px 0' }}>Bulk Create Products from Images</h3>
+              <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '20px' }}>
+                Select a category, verify the default price and description, then upload multiple images. 
+                Products will be created automatically using the filenames!
+              </p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '6px' }}>Category</label>
+                  <select 
+                    value={bulkCategory} 
+                    onChange={(e) => {
+                      const cat = e.target.value;
+                      setBulkCategory(cat);
+                      if (bulkDefaults[cat]) {
+                        setBulkPrice(bulkDefaults[cat].price);
+                        setBulkDescription(bulkDefaults[cat].desc);
+                      }
+                    }}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  >
+                    {Object.keys(bulkDefaults).map(c => (
+                      <option key={c} value={c}>{c.replace('_', ' ').toUpperCase()}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '6px' }}>Price (₹)</label>
+                  <input 
+                    type="number" 
+                    value={bulkPrice} 
+                    onChange={(e) => setBulkPrice(Number(e.target.value))}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  />
+                </div>
+              </div>
+              
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '6px' }}>Description</label>
+                <textarea 
+                  value={bulkDescription}
+                  onChange={(e) => setBulkDescription(e.target.value)}
+                  rows={3}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '6px' }}>Select Images to Upload & Create</label>
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="image/*" 
+                  onChange={handleBulkUpload}
+                  disabled={bulkProgress !== null}
+                  style={{ width: '100%', padding: '10px', border: '2px dashed #cbd5e1', borderRadius: '6px', cursor: 'pointer' }}
+                />
+              </div>
+              
+              {bulkProgress && (
+                <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f1f5f9', borderRadius: '6px', textAlign: 'center', fontWeight: 600, color: '#334155' }}>
+                  Creating Product {bulkProgress.current} of {bulkProgress.total}...
+                </div>
               )}
             </div>
           )}
@@ -1428,26 +1613,29 @@ export const AdminPortal: React.FC = () => {
                       const total = productsToUpdate.length;
                       setMigrationProgress({ current: 0, total });
                       
+                      // Fetch a catalog of all old products to do fuzzy matching
+                      const { data: oldCatalog } = await oldDb.from('products').select('id, name, sku');
+                      const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+
                       for (let i = 0; i < productsToUpdate.length; i++) {
                         const p = productsToUpdate[i];
                         try {
                           // Try to find the exact matching product in the old DB
                           let oldData = null;
-                          
-                          // 1. Try matching by exact ID
-                          const { data: byId } = await oldDb.from('products').select('image').eq('id', p.id).maybeSingle();
-                          if (byId && byId.image) oldData = byId;
+                          let matchId = null;
 
-                          // 2. Fallback to SKU
-                          if (!oldData && p.sku) {
-                            const { data: bySku } = await oldDb.from('products').select('image').eq('sku', p.sku).maybeSingle();
-                            if (bySku && bySku.image) oldData = bySku;
+                          if (oldCatalog) {
+                            let match = oldCatalog.find(o => o.id === p.id);
+                            if (!match && p.sku) match = oldCatalog.find(o => o.sku === p.sku);
+                            if (!match) match = oldCatalog.find(o => o.name === p.name);
+                            if (!match) match = oldCatalog.find(o => normalize(o.name) === normalize(p.name));
+                            if (!match) match = oldCatalog.find(o => normalize(o.name).includes(normalize(p.name)) || normalize(p.name).includes(normalize(o.name)));
+                            if (match) matchId = match.id;
                           }
-
-                          // 3. Fallback to Name
-                          if (!oldData) {
-                            const { data: byName } = await oldDb.from('products').select('image').eq('name', p.name).maybeSingle();
-                            if (byName && byName.image) oldData = byName;
+                          
+                          if (matchId) {
+                            const { data } = await oldDb.from('products').select('image').eq('id', matchId).maybeSingle();
+                            if (data && data.image) oldData = data;
                           }
 
                           if (oldData && oldData.image && oldData.image.length > 100) {
