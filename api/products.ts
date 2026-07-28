@@ -36,8 +36,9 @@ export default async function handler(req: any, res: any) {
       return res.status(500).json({ error: error.message });
     }
 
-    // Cache at edge for 60 seconds, serve stale while revalidating up to 5 minutes
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+    // Keep the catalog fast on both the browser and CDN. Stale data is served
+    // briefly while it is refreshed, avoiding a blank catalog on reload.
+    res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400');
     return res.status(200).json(data);
   } catch (err: any) {
     console.error('API /products catch block error:', err);

@@ -43,7 +43,6 @@ export const MyAccount: React.FC = () => {
   const [regPincode, setRegPincode] = useState('');
   const [showRegOtp, setShowRegOtp] = useState(false);
   const [regOtpCode, setRegOtpCode] = useState('');
-  const [expectedRegOtp, setExpectedRegOtp] = useState('');
   const [regLoading, setRegLoading] = useState(false);
 
   // Handle direct tracking click
@@ -82,13 +81,19 @@ export const MyAccount: React.FC = () => {
       setError("Please enter a valid 6-digit verification code.");
       return;
     }
-    if (regOtpCode !== expectedRegOtp) {
-      setError("Invalid verification code. Please check your email.");
-      return;
-    }
-
     setRegLoading(true);
     try {
+      const verifyRes = await fetch('/api/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: regEmail, otp: regOtpCode })
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok || !verifyData.verified) {
+        setError(verifyData.error || 'Invalid or expired verification code. Please check and try again.');
+        return;
+      }
+
       const result = await registerUser({
         name: regName,
         email: regEmail,
@@ -106,7 +111,6 @@ export const MyAccount: React.FC = () => {
         setSuccessMessage("Registration successful! Welcome to Maa Diaries.");
         setShowRegOtp(false);
         setRegOtpCode('');
-        setExpectedRegOtp('');
         // Reset registration form
         setRegName('');
         setRegEmail('');
@@ -166,7 +170,6 @@ export const MyAccount: React.FC = () => {
       } else {
         setError(null);
         if (result.needsVerification) {
-          setExpectedRegOtp(result.verificationCode || '');
           setShowRegOtp(true);
           setSuccessMessage(result.message || "A 6-digit verification code has been sent to your email.");
         } else {

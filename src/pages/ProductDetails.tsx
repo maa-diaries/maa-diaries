@@ -9,6 +9,7 @@ export const ProductDetails: React.FC = () => {
   const { id: routeProductId } = useParams();
   const { 
     products, 
+    productsLoading,
     addToCart, 
     setCartOpen, 
     toggleWishlist, 
@@ -124,6 +125,15 @@ export const ProductDetails: React.FC = () => {
       setReviewLoading(false);
     }
   };
+
+  if (!product && productsLoading) {
+    return (
+      <div style={{ padding: '80px 24px', textAlign: 'center' }} aria-live="polite">
+        <div className="luxury-loader" style={{ width: '44px', height: '44px', margin: '0 auto' }} />
+        <p style={{ marginTop: '16px' }}>Loading product...</p>
+      </div>
+    );
+  }
 
   if (!product) {
     return (

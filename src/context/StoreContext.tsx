@@ -40,6 +40,7 @@ export interface UserProfile {
 
 interface StoreContextType {
   products: Product[];
+  productsLoading: boolean;
   refreshProducts: () => void;
   cart: CartItem[];
   addToCart: (item: Omit<CartItem, 'key'>) => void;
@@ -87,7 +88,7 @@ interface StoreContextType {
   
   currentUser: UserProfile | null;
   loginUser: (emailOrPhone: string, password?: string) => Promise<boolean>;
-  registerUser: (profile: UserProfile, password?: string, skipVerification?: boolean) => Promise<{ success: boolean; needsVerification?: boolean; verificationCode?: string; message?: string }>;
+  registerUser: (profile: UserProfile, password?: string, skipVerification?: boolean) => Promise<{ success: boolean; needsVerification?: boolean; message?: string }>;
   resetPassword: (email: string) => Promise<{ success: boolean; message: string }>;
   updatePassword: (password: string) => Promise<{ success: boolean; message: string }>;
   resetPasswordOpen: boolean;
@@ -122,6 +123,7 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -290,7 +292,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return false;
   };
 
-  const registerUser = async (profile: UserProfile, password?: string, skipVerification = false): Promise<{ success: boolean; needsVerification?: boolean; verificationCode?: string; message?: string }> => {
+  const registerUser = async (profile: UserProfile, password?: string, skipVerification = false): Promise<{ success: boolean; needsVerification?: boolean; message?: string }> => {
     if (!skipVerification) {
       // 1. Check if user already exists
       const existingEmail = await databaseService.getUserByEmail(profile.email);
@@ -450,6 +452,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Load initial data
   const refreshProducts = async () => {
+    setProductsLoading(true);
     try {
       const data = await databaseService.getProducts();
       setProducts(data);
@@ -466,6 +469,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           console.error("Failed to load products even after emergency fix:", e2);
         }
       }
+    } finally {
+      setProductsLoading(false);
     }
   };
 
@@ -574,6 +579,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     } catch (e) {
       console.warn('Failed to clear old localStorage settings cache:', e);
+    }
+
+    // Render the most recent catalog immediately after a refresh, then update it
+    // in the background from the server.
+    try {
+      const cachedProducts = localStorage.getItem('md_products_cache_v1');
+      if (cachedProducts) {
+        const parsedProducts = JSON.parse(cachedProducts);
+        if (Array.isArray(parsedProducts)) {
+          setProducts(parsedProducts);
+          setProductsLoading(false);
+        }
+      }
+    } catch {
+      localStorage.removeItem('md_products_cache_v1');
     }
 
     refreshProducts();
@@ -887,6 +907,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <StoreContext.Provider value={{
       products,
+      productsLoading,
       refreshProducts,
       cart,
       addToCart,

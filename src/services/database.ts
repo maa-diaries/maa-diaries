@@ -150,7 +150,13 @@ export const databaseService = {
       const res = await fetch('/api/products');
       if (res.ok) {
         const data = await res.json();
-        return (data || []).map(mapProduct);
+        const products = (data || []).map(mapProduct);
+        try {
+          localStorage.setItem('md_products_cache_v1', JSON.stringify(products));
+        } catch {
+          // Product caching is only a performance improvement.
+        }
+        return products;
       }
     } catch (e) {
       // Ignore cache fetch error and fallback to direct db
@@ -162,7 +168,13 @@ export const databaseService = {
       .order('name', { ascending: true });
     
     if (error) throw error;
-    return (data || []).map(mapProduct);
+    const products = (data || []).map(mapProduct);
+    try {
+      localStorage.setItem('md_products_cache_v1', JSON.stringify(products));
+    } catch {
+      // Product caching is only a performance improvement.
+    }
+    return products;
   },
 
   async emergencyClearLargeImages(): Promise<void> {

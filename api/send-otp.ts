@@ -3,14 +3,11 @@ import { rateLimit } from './_rateLimit.js';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://zqlioygunslwnwyfeftw.supabase.co';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbGlveWd1bnNsd253eWZlZnR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNDEyMjEsImV4cCI6MjEwMDgxNzIyMX0.du7Buy_UGYCjwLXYFnEmCCZbi6jUq_8mQctMmEB09AQ';
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 const supabaseAdmin = (supabaseUrl && serviceRoleKey)
   ? createClient(supabaseUrl, serviceRoleKey)
   : null;
-
-// In-memory fallback if Supabase is not configured (e.g. local dev)
-const inMemoryOtpStore = new Map<string, { codeHash: string; expiresAt: number }>();
 
 export function getOtpHash(email: string, code: string): string {
   const secret = process.env.PAYU_MERCHANT_SALT || process.env.VITE_SUPABASE_ANON_KEY || 'maadiaries_otp_secret';
@@ -42,6 +39,10 @@ export default async function handler(req: any, res: any) {
       return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
+    if (!supabaseAdmin) {
+      return res.status(500).json({ error: 'Email verification is temporarily unavailable. Please contact support.' });
+    }
+
     const { email } = req.body || {};
     if (!email || typeof email !== 'string' || !email.includes('@')) {
       return res.status(400).json({ error: 'Valid email address is required.' });
@@ -52,24 +53,18 @@ export default async function handler(req: any, res: any) {
     const codeHash = getOtpHash(cleanEmail, otpCode);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Store server-side
-    if (supabaseAdmin) {
-      try {
-        const { error: insertErr } = await supabaseAdmin
-          .from('otp_codes')
-          .insert({
-            email: cleanEmail,
-            code_hash: codeHash,
-            expires_at: expiresAt.toISOString(),
-            used: false
-          });
-        if (insertErr) throw insertErr;
-      } catch (dbErr) {
-        console.error('Failed to store OTP in Supabase, using memory fallback:', dbErr);
-        inMemoryOtpStore.set(cleanEmail, { codeHash, expiresAt: expiresAt.getTime() });
-      }
-    } else {
-      inMemoryOtpStore.set(cleanEmail, { codeHash, expiresAt: expiresAt.getTime() });
+    // OTPs must be durable because send and verify can run in different serverless instances.
+    const { error: insertErr } = await supabaseAdmin
+      .from('otp_codes')
+      .insert({
+        email: cleanEmail,
+        code_hash: codeHash,
+        expires_at: expiresAt.toISOString(),
+        used: false
+      });
+    if (insertErr) {
+      console.error('Failed to store OTP in Supabase:', insertErr);
+      return res.status(500).json({ error: 'Unable to prepare the verification code. Please try again.' });
     }
 
     // Send email via Resend

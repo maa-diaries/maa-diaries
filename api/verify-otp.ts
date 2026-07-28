@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getOtpHash } from './send-otp.js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://zqlioygunslwnwyfeftw.supabase.co';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbGlveWd1bnNsd253eWZlZnR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNDEyMjEsImV4cCI6MjEwMDgxNzIyMX0.du7Buy_UGYCjwLXYFnEmCCZbi6jUq_8mQctMmEB09AQ';
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 const supabaseAdmin = (supabaseUrl && serviceRoleKey)
   ? createClient(supabaseUrl, serviceRoleKey)
@@ -32,6 +32,10 @@ export default async function handler(req: any, res: any) {
       return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
+    if (!supabaseAdmin) {
+      return res.status(500).json({ error: 'Email verification is temporarily unavailable. Please contact support.' });
+    }
+
     const { email, otp } = req.body || {};
     if (!email || !otp || typeof email !== 'string' || typeof otp !== 'string') {
       return res.status(400).json({ error: 'Email and verification code are required.' });
@@ -43,36 +47,30 @@ export default async function handler(req: any, res: any) {
 
     let isValid = false;
 
-    if (supabaseAdmin) {
-      try {
-        const { data, error } = await supabaseAdmin
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('otp_codes')
+        .select('id')
+        .eq('email', cleanEmail)
+        .eq('code_hash', codeHash)
+        .eq('used', false)
+        .gte('expires_at', new Date().toISOString())
+        .order('id', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+      if (data && data.length > 0) {
+        const { error: updateErr } = await supabaseAdmin
           .from('otp_codes')
-          .select('id, expires_at, used')
-          .eq('email', cleanEmail)
-          .eq('code_hash', codeHash)
-          .eq('used', false)
-          .gte('expires_at', new Date().toISOString())
-          .order('id', { ascending: false })
-          .limit(1);
-
-        if (!error && data && data.length > 0) {
-          isValid = true;
-          // Mark code as used
-          await supabaseAdmin
-            .from('otp_codes')
-            .update({ used: true })
-            .eq('id', data[0].id);
-        }
-      } catch (dbErr) {
-        console.error('Error verifying OTP in Supabase:', dbErr);
-      }
-    }
-
-    // Fallback simulation mode / dev check
-    if (!isValid && (!supabaseAdmin || process.env.NODE_ENV === 'development')) {
-      if (cleanOtp.length === 6 && /^\d+$/.test(cleanOtp)) {
+          .update({ used: true })
+          .eq('id', data[0].id)
+          .eq('used', false);
+        if (updateErr) throw updateErr;
         isValid = true;
       }
+    } catch (dbErr) {
+      console.error('Error verifying OTP in Supabase:', dbErr);
+      return res.status(500).json({ error: 'Unable to verify the code. Please try again.' });
     }
 
     if (isValid) {
