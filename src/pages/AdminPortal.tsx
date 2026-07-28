@@ -48,6 +48,7 @@ export const AdminPortal: React.FC = () => {
   const [pinError, setPinError] = useState('');
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [isPending, setIsPending] = useState(false);
+  const [migrationProgress, setMigrationProgress] = useState<{current: number, total: number} | null>(null);
     
   // Search & Filter state for catalog list
   const [productSearch, setProductSearch] = useState('');
@@ -1410,6 +1411,7 @@ export const AdminPortal: React.FC = () => {
                 <button
                   type="button"
                   onClick={async () => {
+                    if (migrationProgress) return;
                     const oldUrl = prompt("Enter OLD Supabase URL (e.g. https://jqosh...):");
                     if (!oldUrl) return;
                     const oldKey = prompt("Enter OLD Supabase Anon Key:");
@@ -1423,8 +1425,11 @@ export const AdminPortal: React.FC = () => {
                       
                       const productsToUpdate = products;
                       let count = 0;
+                      const total = productsToUpdate.length;
+                      setMigrationProgress({ current: 0, total });
                       
-                      for (const p of productsToUpdate) {
+                      for (let i = 0; i < productsToUpdate.length; i++) {
+                        const p = productsToUpdate[i];
                         try {
                           // Match by product name instead of ID, in case the IDs changed during CSV import
                           const { data } = await oldDb.from('products').select('image').eq('name', p.name).maybeSingle();
@@ -1456,11 +1461,14 @@ export const AdminPortal: React.FC = () => {
                         } catch (err) {
                            console.error("Failed to migrate product", p.id, err);
                         }
+                        setMigrationProgress({ current: i + 1, total });
                       }
                       showToast(`Migration complete! Successfully migrated ${count} images.`, "success");
                       refreshProducts();
                     } catch (err: any) {
                       showToast("Migration error: " + err.message, "error");
+                    } finally {
+                      setMigrationProgress(null);
                     }
                   }}
                   style={{
@@ -1474,10 +1482,15 @@ export const AdminPortal: React.FC = () => {
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '6px',
+                    opacity: migrationProgress ? 0.7 : 1,
+                    pointerEvents: migrationProgress ? 'none' : 'auto'
                   }}
                 >
-                  <Download size={16} /> Auto-Migrate Images
+                  <Download size={16} /> 
+                  {migrationProgress 
+                    ? `Migrating... ${migrationProgress.current} / ${migrationProgress.total}`
+                    : "Auto-Migrate Images"}
                 </button>
                 <button
                   type="button"
