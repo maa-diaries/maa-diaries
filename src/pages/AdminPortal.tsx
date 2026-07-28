@@ -9,7 +9,7 @@ import type { InstagramFeedItem } from '../services/siteSettings';
 import { 
   Lock, Trash2, Edit3, Plus, Package, Clock, DollarSign, 
   Eye, X, Check, Truck, CreditCard, Settings, Percent,
-  XCircle, Star, MessageSquare, ArrowUp, ArrowDown, Home, Search, Globe, Download
+  XCircle, Star, MessageSquare, ArrowUp, ArrowDown, Home, Search, Globe
 } from 'lucide-react';
 import { DEFAULT_REVIEWS, getDeletedDefaultReviewIds, markDefaultReviewDeleted } from '../data/defaultReviews';
 
@@ -48,7 +48,6 @@ export const AdminPortal: React.FC = () => {
   const [pinError, setPinError] = useState('');
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [isPending, setIsPending] = useState(false);
-  const [migrationProgress, setMigrationProgress] = useState<{current: number, total: number} | null>(null);
   
   // Bulk Upload State
   const [isBulkUploading, setIsBulkUploading] = useState(false);
@@ -550,22 +549,6 @@ export const AdminPortal: React.FC = () => {
         await refreshProducts();
       } catch (err) {
         console.error("Failed to delete product:", err);
-      } finally {
-        setIsPending(false);
-      }
-    }
-  };
-
-  const handleDeleteAllProducts = async () => {
-    if (window.confirm('Are you sure you want to delete ALL products from your Supabase database? This action cannot be undone.')) {
-      setIsPending(true);
-      try {
-        await databaseService.deleteAllProducts();
-        await refreshProducts();
-        alert("All products have been deleted from Supabase.");
-      } catch (err: any) {
-        console.error("Failed to delete all products:", err);
-        alert("Failed to delete products: " + (err.message || 'Unknown error'));
       } finally {
         setIsPending(false);
       }
