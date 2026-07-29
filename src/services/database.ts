@@ -307,7 +307,7 @@ export const databaseService = {
     if (email) {
       query = query.eq('customer_email', email);
     } else {
-      query = query.range(0, 49);
+      query = query.range(0, 499);
     }
 
     const { data, error } = await query;

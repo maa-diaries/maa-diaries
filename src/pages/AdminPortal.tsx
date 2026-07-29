@@ -227,7 +227,7 @@ export const AdminPortal: React.FC = () => {
       refreshOrders();
       refreshEmailLogs();
     }  
-  }, [isAuthenticated]);
+  }, [isAuthenticated, activeTab]);
   useEffect(() => {
     setNewArrivalsIds(siteSettings.homeNewArrivals || []);
     setBestSellersIds(siteSettings.homeBestSellers || []);

@@ -476,7 +476,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const refreshOrders = async (email?: string) => {
-    const data = await databaseService.getOrders(email);
+    const isAdmin = currentUser?.email === 'founder@maadiaries.com' || email === 'founder@maadiaries.com';
+    const filterEmail = isAdmin ? undefined : email;
+    const data = await databaseService.getOrders(filterEmail);
     setOrders(data);
   };
 
@@ -656,10 +658,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [wishlist, currentUser?.email]);
 
-  // Fetch user-specific orders when logged in
+  // Fetch user-specific orders when logged in (or all orders for admin)
   useEffect(() => {
     if (currentUser?.email) {
-      refreshOrders(currentUser.email);
+      if (currentUser.email === 'founder@maadiaries.com') {
+        refreshOrders();
+      } else {
+        refreshOrders(currentUser.email);
+      }
     }
   }, [currentUser?.email]);
 
