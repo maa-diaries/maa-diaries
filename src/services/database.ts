@@ -759,7 +759,7 @@ export const databaseService = {
     try {
       const { data, error } = await supabase
         .from('coupons')
-        .select('id, code, type, value, min_order, active, description, created_at')
+        .select('code, type, value, min_order, active, description, created_at')
         .order('created_at', { ascending: false });
       if (error) throw error;
       const list = (data || []).map((row: any) => ({
@@ -788,7 +788,7 @@ export const databaseService = {
     try {
       const { data, error } = await supabase
         .from('coupons')
-        .select('id, code, type, value, min_order, active, description, created_at')
+        .select('code, type, value, min_order, active, description, created_at')
         .eq('code', code.toUpperCase())
         .maybeSingle();
       if (error) throw error;

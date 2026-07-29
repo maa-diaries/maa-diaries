@@ -512,18 +512,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const refreshCoupons = async () => {
     const data = await databaseService.getCoupons();
     setCoupons(data);
-    // Seed default coupons if none exist
-    if (data.length === 0) {
-      const defaults: Coupon[] = [
-        { code: 'FREE1000', type: 'fixed', value: 99, minOrder: 1000, active: true, description: 'FREE Express Delivery on orders above ₹1,000' },
-        { code: 'LOYALGIFT', type: 'fixed', value: 149, minOrder: 500, active: true, description: 'Complimentary luxury surprise gift on your first order' },
-      ];
-      for (const d of defaults) {
-        await databaseService.saveCoupon(d);
-      }
-      const seeded = await databaseService.getCoupons();
-      setCoupons(seeded);
-    }
   };
 
   const saveCoupon = async (coupon: Coupon) => {
