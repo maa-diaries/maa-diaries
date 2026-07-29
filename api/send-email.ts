@@ -72,7 +72,7 @@ export default async function handler(req: any, res: any) {
       if (supabaseAdmin) {
         const { data: dbOrder, error: dbError } = await supabaseAdmin
           .from('orders')
-          .select('*')
+          .select('id, customer_email')
           .eq('id', order.id)
           .maybeSingle();
         if (dbError || !dbOrder) {
@@ -94,7 +94,7 @@ export default async function handler(req: any, res: any) {
       if (supabaseAdmin) {
         const { data: dbOrder, error: dbError } = await supabaseAdmin
           .from('orders')
-          .select('*')
+          .select('id, customer_email')
           .eq('id', order.id)
           .maybeSingle();
         if (dbError || !dbOrder) {

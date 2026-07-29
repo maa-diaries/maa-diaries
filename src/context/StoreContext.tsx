@@ -50,7 +50,7 @@ interface StoreContextType {
   wishlist: string[];
   toggleWishlist: (productId: string) => void;
   orders: Order[];
-  refreshOrders: () => void;
+  refreshOrders: (email?: string) => void;
   placeOrder: (shipping: {
     customerName: string;
     customerEmail: string;
@@ -474,8 +474,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const refreshOrders = async () => {
-    const data = await databaseService.getOrders();
+  const refreshOrders = async (email?: string) => {
+    const data = await databaseService.getOrders(email);
     setOrders(data);
   };
 
@@ -597,13 +597,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     refreshProducts();
-    refreshOrders();
-    refreshInquiries();
     refreshCategories();
     refreshSiteSettings();
     refreshCoupons();
-    refreshMedia();
-    refreshEmailLogs();
     
     // Restore cart & wishlist from sessionStorage so refresh retains items during session
     try {
@@ -671,19 +667,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [wishlist, currentUser?.email]);
 
-  // Auto-refresh data when tab regains focus (user returns from admin panel or another tab)
+  // Fetch user-specific orders when logged in
   useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        refreshSiteSettings();
-        refreshProducts();
-        refreshCategories();
-        refreshCoupons();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, []);
+    if (currentUser?.email) {
+      refreshOrders(currentUser.email);
+    } else {
+      setOrders([]); // Clear orders on logout
+    }
+  }, [currentUser?.email]);
 
   // Cart operations
   const addToCart = (itemData: Omit<CartItem, 'key'>) => {

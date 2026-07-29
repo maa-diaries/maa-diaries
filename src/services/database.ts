@@ -166,7 +166,7 @@ export const databaseService = {
 
     const { data, error } = await supabase
       .from('products')
-      .select('*')
+      .select('id, name, description, category, subcategory, price, original_price, discount, image, rating, reviews_count, metal_options, stone_options, specs, is_featured, is_free_delivery, stock, sku')
       .order('name', { ascending: true });
     
     if (error) throw error;
@@ -294,14 +294,23 @@ export const databaseService = {
   },
 
   // --- Orders API ---
-  async getOrders(): Promise<Order[]> {
+  async getOrders(email?: string): Promise<Order[]> {
     if (!isSupabaseConfigured) {
       return [];
     }
-    const { data, error } = await supabase
+    
+    let query = supabase
       .from('orders')
-      .select('*')
+      .select('id, customer_name, customer_email, customer_phone, address_line, city, state, pincode, estimated_delivery, courier_partner, shipping_cost, payment_method, payment_status, items, total_amount, status, tracking_number, txnid, payu_id, created_at')
       .order('created_at', { ascending: false });
+      
+    if (email) {
+      query = query.eq('customer_email', email);
+    } else {
+      query = query.range(0, 49);
+    }
+
+    const { data, error } = await query;
     if (error) throw error;
     return (data || []).map(mapOrder);
   },
@@ -353,7 +362,7 @@ export const databaseService = {
     if (!isSupabaseConfigured) return null;
     const { data, error } = await supabase
       .from('orders')
-      .select('*')
+      .select('id, customer_name, customer_email, customer_phone, address_line, city, state, pincode, estimated_delivery, courier_partner, shipping_cost, payment_method, payment_status, items, total_amount, status, tracking_number, txnid, payu_id, created_at')
       .eq('txnid', txnid)
       .maybeSingle();
     if (error) throw error;
@@ -404,8 +413,9 @@ export const databaseService = {
     }
     const { data, error } = await supabase
       .from('inquiries')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('id, name, email, phone, message, order_id, created_at')
+      .order('created_at', { ascending: false })
+      .range(0, 49);
     if (error) throw error;
     return (data || []).map(mapInquiry);
   },
@@ -461,7 +471,7 @@ export const databaseService = {
     if (!isSupabaseConfigured) return null;
     const { data, error } = await supabase
       .from('registered_users')
-      .select('*')
+      .select('name, email, phone, address_line, city, state, pincode, cart, wishlist')
       .eq('email', email)
       .maybeSingle();
     if (error) throw error;
@@ -544,8 +554,9 @@ export const databaseService = {
     }
     const { data, error } = await supabase
       .from('product_reviews')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('id, product_id, user_name, rating, comment, created_at, reply_comment, replied_at')
+      .order('created_at', { ascending: false })
+      .range(0, 49);
     if (error) throw error;
     return (data || []).map((row: any) => ({
       id: row.id,
@@ -565,7 +576,7 @@ export const databaseService = {
     }
     const { data, error } = await supabase
       .from('product_reviews')
-      .select('*')
+      .select('id, product_id, user_name, rating, comment, created_at, reply_comment, replied_at')
       .eq('product_id', productId)
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -748,7 +759,7 @@ export const databaseService = {
     try {
       const { data, error } = await supabase
         .from('coupons')
-        .select('*')
+        .select('id, code, type, value, min_order, active, description, created_at')
         .order('created_at', { ascending: false });
       if (error) throw error;
       const list = (data || []).map((row: any) => ({
@@ -777,7 +788,7 @@ export const databaseService = {
     try {
       const { data, error } = await supabase
         .from('coupons')
-        .select('*')
+        .select('id, code, type, value, min_order, active, description, created_at')
         .eq('code', code.toUpperCase())
         .maybeSingle();
       if (error) throw error;
@@ -870,7 +881,7 @@ export const databaseService = {
     try {
       const { data, error } = await supabase
         .from('site_settings')
-        .select('*')
+        .select('id, whatsapp, support_phone, support_email, support_address, free_shipping_threshold, seo_title, seo_description, hero_title, hero_subtitle, hero_description, hero_image, home_new_arrivals, home_best_sellers, home_trending, home_categories, instagram_feed_urls')
         .eq('id', 'default')
         .maybeSingle();
       
@@ -965,8 +976,9 @@ export const databaseService = {
     try {
       const { data, error } = await supabase
         .from('media_library')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('id, url, name, created_at')
+        .order('created_at', { ascending: false })
+        .range(0, 49);
       if (error) throw error;
       const list = (data || []).map((row: any) => ({
         id: String(row.id),
@@ -1049,8 +1061,9 @@ export const databaseService = {
     try {
       const { data, error } = await supabase
         .from('email_logs')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('id, recipient_email, subject, body, status, created_at')
+        .order('created_at', { ascending: false })
+        .range(0, 49);
       if (error) throw error;
       const list = (data || []).map((row: any) => ({
         id: String(row.id),

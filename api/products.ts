@@ -28,7 +28,7 @@ export default async function handler(req: any, res: any) {
 
     const { data, error } = await supabase
       .from('products')
-      .select('*')
+      .select('id, name, description, category, subcategory, price, original_price, discount, image, rating, reviews_count, metal_options, stone_options, specs, is_featured, is_free_delivery, stock, sku')
       .order('name', { ascending: true });
 
     if (error) {

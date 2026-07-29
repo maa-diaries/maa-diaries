@@ -32,6 +32,7 @@ export const AdminPortal: React.FC = () => {
     saveSiteSettings,
     refreshSiteSettings,
     emailLogs,
+    refreshEmailLogs,
     triggerEmailNotification,
     sendEmailViaResend,
     replyToReview
@@ -219,8 +220,14 @@ export const AdminPortal: React.FC = () => {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  useEffect(() => { if (isAuthenticated) { refreshCoupons(); } }, [isAuthenticated]);
-  useEffect(() => { if (isAuthenticated) { refreshSiteSettings(); } }, [isAuthenticated]);
+  useEffect(() => { 
+    if (isAuthenticated) { 
+      refreshCoupons(); 
+      refreshSiteSettings();
+      refreshOrders();
+      refreshEmailLogs();
+    }  
+  }, [isAuthenticated]);
   useEffect(() => {
     setNewArrivalsIds(siteSettings.homeNewArrivals || []);
     setBestSellersIds(siteSettings.homeBestSellers || []);
