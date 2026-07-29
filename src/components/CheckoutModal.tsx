@@ -230,8 +230,8 @@ export const CheckoutModal: React.FC = () => {
   }
   const cartTotal = subtotal - discountAmount;
   const hasFreeDeliveryProduct = cart.some(item => Boolean(item.product.isFreeDelivery) || Boolean(products.find((p: any) => p.id === item.product.id)?.isFreeDelivery));
-  const shippingCost = (hasFreeDeliveryProduct || subtotal >= siteSettings.freeShippingThreshold) ? 0 : 99;
-  const codFee = paymentMethod === 'COD' ? 50 : 0;
+  const shippingCost = (hasFreeDeliveryProduct || subtotal >= siteSettings.freeShippingThreshold) ? 0 : 59;
+  const codFee = 0;
   const grandTotal = cartTotal + shippingCost + codFee;
 
   // Validate coupon minOrder in response to subtotal changes
@@ -1098,7 +1098,7 @@ For support WhatsApp +${siteSettings.whatsapp}
                       <Truck size={32} style={{ color: 'var(--gold-primary)' }} />
                       <div>
                         <h5 style={{ color: 'var(--text-primary)', fontSize: '0.95rem', margin: '0 0 4px' }}>Cash on Delivery</h5>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', margin: 0 }}>₹50 COD handling fee</p>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', margin: 0 }}>No Extra COD Charge</p>
                       </div>
                     </div>
                   </div>
@@ -1115,9 +1115,9 @@ For support WhatsApp +${siteSettings.whatsapp}
                       <span>₹ {shippingCost}</span>
                     </div>
                     {paymentMethod === 'COD' && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: 'var(--text-secondary)' }}>
-                        <span>COD Service Charge</span>
-                        <span>₹ 50</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: '#2ecc71', fontWeight: 500 }}>
+                        <span>COD Handling Fee</span>
+                        <span>FREE (₹ 0)</span>
                       </div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-light)', paddingTop: '10px', fontWeight: 600, color: 'var(--gold-primary)', fontSize: '0.95rem' }}>
