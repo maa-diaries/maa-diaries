@@ -381,6 +381,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       await supabase.auth.signOut();
     }
     setCurrentUser(null);
+    setOrders([]);
     localStorage.removeItem('md_current_user_v1');
   };
 
@@ -659,8 +660,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     if (currentUser?.email) {
       refreshOrders(currentUser.email);
-    } else {
-      setOrders([]); // Clear orders on logout
     }
   }, [currentUser?.email]);
 
