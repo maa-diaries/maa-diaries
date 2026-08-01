@@ -232,7 +232,8 @@ export const CheckoutModal: React.FC = () => {
   const hasFreeDeliveryProduct = cart.some(item => Boolean(item.product.isFreeDelivery) || Boolean(products.find((p: any) => p.id === item.product.id)?.isFreeDelivery));
   const shippingCost = (hasFreeDeliveryProduct || subtotal >= siteSettings.freeShippingThreshold) ? 0 : 59;
   const codFee = 0;
-  const grandTotal = cartTotal + shippingCost + codFee;
+  const gstAmount = Math.round(cartTotal * 0.05); // Calculate 5% GST
+  const grandTotal = cartTotal + shippingCost + codFee + gstAmount;
 
   // Validate coupon minOrder in response to subtotal changes
   useEffect(() => {
@@ -1113,6 +1114,10 @@ For support WhatsApp +${siteSettings.whatsapp}
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: 'var(--text-secondary)' }}>
                       <span>Logistics Fee (Normal Delivery)</span>
                       <span>₹ {shippingCost}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                      <span>GST (5%)</span>
+                      <span>₹ {gstAmount}</span>
                     </div>
                     {paymentMethod === 'COD' && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: '#2ecc71', fontWeight: 500 }}>
