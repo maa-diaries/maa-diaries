@@ -56,6 +56,7 @@ export const AdminPortal: React.FC = () => {
   const [bulkPrice, setBulkPrice] = useState(139);
   const [bulkDescription, setBulkDescription] = useState('Exquisite handcrafted Kashmiri Jhumke, designed with intricate details. Premium anti-tarnish finish for long-lasting shine.');
   const [bulkProgress, setBulkProgress] = useState<{current: number, total: number} | null>(null);
+  const [bulkFiles, setBulkFiles] = useState<{ file: File, name: string, previewUrl: string }[]>([]);
     
   // Search & Filter state for catalog list
   const [productSearch, setProductSearch] = useState('');
@@ -327,22 +328,55 @@ export const AdminPortal: React.FC = () => {
     'bracelets': { price: 89, desc: 'Beautifully crafted premium bracelet. Anti-tarnish finish.' }
   };
 
-  const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBulkFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     
+    const newItems: { file: File, name: string, previewUrl: string }[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!file.type.startsWith('image/')) continue;
+      
+      let beautyName = file.name.split('.')[0].replace(/[-_]/g, ' ');
+      beautyName = beautyName.replace(/\b\w/g, c => c.toUpperCase());
+      
+      newItems.push({
+        file,
+        name: beautyName,
+        previewUrl: URL.createObjectURL(file)
+      });
+    }
+    
+    setBulkFiles(prev => [...prev, ...newItems]);
+    if (e.target) e.target.value = '';
+  };
+
+  const removeBulkFile = (index: number) => {
+    setBulkFiles(prev => {
+      const copy = [...prev];
+      URL.revokeObjectURL(copy[index].previewUrl);
+      copy.splice(index, 1);
+      return copy;
+    });
+  };
+
+  const updateBulkFileName = (index: number, newName: string) => {
+    setBulkFiles(prev => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], name: newName };
+      return copy;
+    });
+  };
+
+  const startBulkUpload = async () => {
+    if (bulkFiles.length === 0) return;
     setIsBulkUploading(true);
-    setBulkProgress({ current: 0, total: files.length });
+    setBulkProgress({ current: 0, total: bulkFiles.length });
     
     try {
       let count = 0;
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (!file.type.startsWith('image/')) continue;
-        
-        // Convert filename to product name (e.g. "beautiful-gold-jhumka.jpg" -> "Beautiful Gold Jhumka")
-        let prodName = file.name.split('.')[0].replace(/[-_]/g, ' ');
-        prodName = prodName.replace(/\b\w/g, c => c.toUpperCase());
+      for (let i = 0; i < bulkFiles.length; i++) {
+        const item = bulkFiles[i];
         
         // Compress image
         const compressedBase64 = await new Promise<string>((resolve) => {
@@ -370,12 +404,12 @@ export const AdminPortal: React.FC = () => {
             img.onerror = () => resolve('');
             img.src = e.target?.result as string;
           };
-          reader.readAsDataURL(file);
+          reader.readAsDataURL(item.file);
         });
         
         if (compressedBase64) {
           await databaseService.addProduct({
-            name: prodName,
+            name: item.name,
             description: bulkDescription,
             category: bulkCategory,
             subcategory: '',
@@ -401,17 +435,19 @@ export const AdminPortal: React.FC = () => {
           });
           count++;
         }
-        setBulkProgress({ current: i + 1, total: files.length });
+        setBulkProgress({ current: i + 1, total: bulkFiles.length });
       }
       showToast(`Successfully created ${count} products!`, 'success');
+      
+      // Cleanup Object URLs
+      bulkFiles.forEach(item => URL.revokeObjectURL(item.previewUrl));
+      setBulkFiles([]);
       await refreshProducts(true);
     } catch (err: any) {
       showToast('Bulk upload failed: ' + err.message, 'error');
     } finally {
       setIsBulkUploading(false);
       setBulkProgress(null);
-      // Reset input
-      if (e.target) e.target.value = '';
     }
   };
 
@@ -1209,16 +1245,55 @@ export const AdminPortal: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '6px' }}>Select Images to Upload & Create</label>
+                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '6px' }}>Select Images to Add to Queue</label>
                 <input 
                   type="file" 
                   multiple 
                   accept="image/*" 
-                  onChange={handleBulkUpload}
+                  onChange={handleBulkFileSelection}
                   disabled={bulkProgress !== null}
-                  style={{ width: '100%', padding: '10px', border: '2px dashed #cbd5e1', borderRadius: '6px', cursor: 'pointer' }}
+                  style={{ width: '100%', padding: '10px', border: '2px dashed #cbd5e1', borderRadius: '6px', cursor: 'pointer', marginBottom: '16px' }}
                 />
               </div>
+
+              {bulkFiles.length > 0 && (
+                <div style={{ marginBottom: '20px', maxHeight: '350px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '12px' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem' }}>Selected Products Queue ({bulkFiles.length})</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {bulkFiles.map((item, index) => (
+                      <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px', borderBottom: '1px solid #f1f5f9' }}>
+                        <img src={item.previewUrl} alt="Preview" style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }} />
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '4px' }}>Product Name</label>
+                          <input 
+                            type="text" 
+                            value={item.name} 
+                            onChange={(e) => updateBulkFileName(index, e.target.value)} 
+                            style={{ width: '100%', padding: '6px 10px', fontSize: '0.85rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                          />
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => removeBulkFile(index)} 
+                          style={{ padding: '8px 12px', fontSize: '0.8rem', backgroundColor: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '4px', cursor: 'pointer', marginTop: '16px' }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <button 
+                    type="button" 
+                    onClick={startBulkUpload} 
+                    disabled={bulkProgress !== null} 
+                    className="gold-button" 
+                    style={{ width: '100%', padding: '12px', marginTop: '16px', fontSize: '0.9rem' }}
+                  >
+                    Start Creating {bulkFiles.length} Products
+                  </button>
+                </div>
+              )}
               
               {bulkProgress && (
                 <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f1f5f9', borderRadius: '6px', textAlign: 'center', fontWeight: 600, color: '#334155' }}>
