@@ -23,6 +23,7 @@ export interface Product {
   isFreeDelivery?: boolean;
   stock?: number;
   sku?: string;
+  gstPercent?: number;
 }
 
 

@@ -53,7 +53,11 @@ export const CartDrawer: React.FC = () => {
   const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   const discountAmount = Math.round((subtotal * discountPercent) / 100);
   const cartTotal = subtotal - discountAmount;
-  const gstAmount = Math.round(cartTotal * 0.05);
+  const discountRatio = subtotal > 0 ? (subtotal - discountAmount) / subtotal : 1;
+  const gstAmount = Math.round(cart.reduce((sum, item) => {
+    const itemGstPercent = item.product.gstPercent ?? 5;
+    return sum + (item.product.price * item.quantity * discountRatio) * (itemGstPercent / 100);
+  }, 0));
   const total = cartTotal + gstAmount;
 
   const handleApplyCoupon = (e: React.FormEvent) => {

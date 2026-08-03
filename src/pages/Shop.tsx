@@ -65,7 +65,14 @@ export const Shop: React.FC = () => {
       .filter((p) => {
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                               p.description.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = shopCategory === 'all' || p.category === shopCategory;
+        const matchesCategory = shopCategory === 'all' || 
+                               p.category === shopCategory ||
+                               (shopCategory === 'earrings' && (
+                                 p.category === 'kashmiri jhumke' || 
+                                 p.category === 'jhumkas' || 
+                                 p.category === 'korean earrings' ||
+                                 p.category === 'korean-earrings'
+                               ));
         const matchesPrice = p.price <= priceRange;
 
         return matchesSearch && matchesCategory && matchesPrice;
@@ -119,7 +126,7 @@ export const Shop: React.FC = () => {
     }
     window.dispatchEvent(new CustomEvent('product-added', { detail: { image: product.image } }));
     addToCart({
-      product: { id: product.id, name: product.name, price: product.price, image: product.image, category: product.category, isFreeDelivery: product.isFreeDelivery },
+      product: { id: product.id, name: product.name, price: product.price, image: product.image, category: product.category, isFreeDelivery: product.isFreeDelivery, gstPercent: product.gstPercent },
       quantity: 1,
       selectedMetal: product.metalOptions[0] || product.specs.metal,
       selectedStone: product.stoneOptions[0] || product.specs.stoneType

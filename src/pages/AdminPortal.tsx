@@ -116,6 +116,7 @@ export const AdminPortal: React.FC = () => {
   const [prodPrice, setProdPrice] = useState(0);
   const [prodStock, setProdStock] = useState(0);
   const [prodSku, setProdSku] = useState('');
+  const [prodGstPercent, setProdGstPercent] = useState<number>(5);
   const [prodFreeDelivery, setProdFreeDelivery] = useState(false);
   const [prodImage, setProdImage] = useState('');
   const [prodDesc, setProdDesc] = useState('');
@@ -478,6 +479,7 @@ export const AdminPortal: React.FC = () => {
         discount: prodDiscount || 0,
         stock: prodStock,
         sku: prodSku || undefined,
+        gstPercent: prodGstPercent,
         isFreeDelivery: prodFreeDelivery,
         rating: 5.0,
         reviewsCount: 0,
@@ -524,6 +526,7 @@ export const AdminPortal: React.FC = () => {
         discount: prodDiscount || 0,
         stock: prodStock,
         sku: prodSku || undefined,
+        gstPercent: prodGstPercent,
         isFreeDelivery: prodFreeDelivery,
         image: prodImage,
         metalOptions: [prodPlating],
@@ -572,6 +575,7 @@ export const AdminPortal: React.FC = () => {
     setProdStock(p.stock ?? 0);
     setProdSku(p.sku || '');
     setProdFreeDelivery(Boolean(p.isFreeDelivery));
+    setProdGstPercent(p.gstPercent ?? 5);
     setProdImage(p.image);
     setProdDesc(p.description);
     setProdPlating(p.metalOptions[0] || '');
@@ -592,6 +596,7 @@ export const AdminPortal: React.FC = () => {
     setProdStock(0);
     setProdSku('');
     setProdFreeDelivery(false);
+    setProdGstPercent(5);
     setProdImage('');
     setProdDesc('');
     setProdPlating('18k Rolled Gold Micro-Plating');
@@ -1318,7 +1323,7 @@ export const AdminPortal: React.FC = () => {
               </div>
 
               {/* Upload product images */}
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr', gap: '15px', alignItems: 'flex-end' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1.5fr', gap: '15px', alignItems: 'flex-end' }}>
                 <div className="input-group">
                   <label style={{ fontSize: '0.72rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '8px' }}>Product Image URL</label>
                   <input 
@@ -1333,6 +1338,10 @@ export const AdminPortal: React.FC = () => {
                 <div className="input-group">
                   <label style={{ fontSize: '0.72rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '8px' }}>SKU</label>
                   <input type="text" value={prodSku} onChange={e => setProdSku(e.target.value)} placeholder="MD-EAR-001" style={{ width: '100%', border: '1px solid var(--border-light)', padding: '12px', borderRadius: '6px', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none' }} />
+                </div>
+                <div className="input-group">
+                  <label style={{ fontSize: '0.72rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '8px' }}>GST %</label>
+                  <input type="number" min="0" max="100" required value={prodGstPercent} onChange={e => setProdGstPercent(Math.max(0, parseInt(e.target.value) || 0))} style={{ width: '100%', border: '1px solid var(--border-light)', padding: '12px', borderRadius: '6px', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none', fontWeight: 600 }} />
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <label style={{ flex: 1, border: '1px solid var(--border-light)', color: 'var(--gold-primary)', padding: '12px 6px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, textAlign: 'center', backgroundColor: 'var(--bg-primary)', display: 'block' }}>

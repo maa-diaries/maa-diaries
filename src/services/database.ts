@@ -97,7 +97,8 @@ const mapProduct = (row: any): Product => ({
   isFeatured: Boolean(row.is_featured),
   isFreeDelivery: Boolean(row.is_free_delivery),
   stock: (typeof row.stock === 'number' && row.stock > 0) ? row.stock : 10,
-  sku: row.sku || undefined
+  sku: row.sku || undefined,
+  gstPercent: row.gst_percent !== undefined && row.gst_percent !== null ? Number(row.gst_percent) : 5
 });
 
 const mapOrder = (row: any): Order => ({
@@ -166,7 +167,7 @@ export const databaseService = {
 
     const { data, error } = await supabase
       .from('products')
-      .select('id, name, description, category, subcategory, price, original_price, discount, image, rating, reviews_count, metal_options, stone_options, specs, is_featured, is_free_delivery, stock, sku')
+      .select('id, name, description, category, subcategory, price, original_price, discount, image, rating, reviews_count, metal_options, stone_options, specs, is_featured, is_free_delivery, stock, sku, gst_percent')
       .order('name', { ascending: true });
     
     if (error) throw error;
@@ -219,9 +220,10 @@ export const databaseService = {
         stone_options: productData.stoneOptions,
         specs: productData.specs,
         is_featured: productData.isFeatured || false,
-        is_free_delivery: productData.isFreeDelivery || false
-        ,stock: productData.stock ?? 0
-        ,sku: productData.sku || null
+        is_free_delivery: productData.isFreeDelivery || false,
+        stock: productData.stock ?? 0,
+        sku: productData.sku || null,
+        gst_percent: productData.gstPercent ?? 5
       });
     if (error) throw error;
     return newProduct;
@@ -248,9 +250,10 @@ export const databaseService = {
         stone_options: updatedProduct.stoneOptions,
         specs: updatedProduct.specs,
         is_featured: updatedProduct.isFeatured || false,
-        is_free_delivery: updatedProduct.isFreeDelivery || false
-        ,stock: updatedProduct.stock ?? 0
-        ,sku: updatedProduct.sku || null
+        is_free_delivery: updatedProduct.isFreeDelivery || false,
+        stock: updatedProduct.stock ?? 0,
+        sku: updatedProduct.sku || null,
+        gst_percent: updatedProduct.gstPercent ?? 5
       })
       .eq('id', updatedProduct.id);
     if (error) throw error;
