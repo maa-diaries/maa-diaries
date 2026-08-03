@@ -52,7 +52,7 @@ export const AdminPortal: React.FC = () => {
   
   // Bulk Upload State
   const [isBulkUploading, setIsBulkUploading] = useState(false);
-  const [bulkCategory, setBulkCategory] = useState('kashmiri_jhumke');
+  const [bulkCategory, setBulkCategory] = useState('earrings');
   const [bulkPrice, setBulkPrice] = useState(139);
   const [bulkDescription, setBulkDescription] = useState('Exquisite handcrafted Kashmiri Jhumke, designed with intricate details. Premium anti-tarnish finish for long-lasting shine.');
   const [bulkProgress, setBulkProgress] = useState<{current: number, total: number} | null>(null);
@@ -237,6 +237,12 @@ export const AdminPortal: React.FC = () => {
     setIgFeedUrls(siteSettings.instagramFeedUrls || []);
     setHomeCategories(siteSettings.homeCategories || []);
   }, [siteSettings]);
+
+  useEffect(() => {
+    if (categories.length > 0 && !categories.includes(bulkCategory)) {
+      setBulkCategory(categories[0]);
+    }
+  }, [categories, bulkCategory]);
 
   // Instagram feed handlers
   const addInstagramUrl = async () => {
@@ -1213,12 +1219,15 @@ export const AdminPortal: React.FC = () => {
                       if (bulkDefaults[cat]) {
                         setBulkPrice(bulkDefaults[cat].price);
                         setBulkDescription(bulkDefaults[cat].desc);
+                      } else {
+                        setBulkPrice(139);
+                        setBulkDescription(`Exquisite handcrafted ${cat}, designed with intricate details. Premium anti-tarnish finish for long-lasting shine.`);
                       }
                     }}
                     style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                   >
-                    {Object.keys(bulkDefaults).map(c => (
-                      <option key={c} value={c}>{c.replace('_', ' ').toUpperCase()}</option>
+                    {categories.map(c => (
+                      <option key={c} value={c}>{c.toUpperCase()}</option>
                     ))}
                   </select>
                 </div>
