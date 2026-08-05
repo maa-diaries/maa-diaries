@@ -46,7 +46,7 @@ export const FAQs: React.FC = () => {
       },
       {
         question: "Do you offer Cash on Delivery (COD)?",
-        answer: "Yes, Cash on Delivery is available for all orders across India with NO extra handling fee. Standard delivery is ₹59 (or FREE on orders above ₹1000)."
+        answer: "Yes, Cash on Delivery is available for all orders across India with NO extra handling fee. Standard delivery is ₹99 (or FREE on orders above ₹1000)."
       },
       {
         question: "What is your Return and Exchange policy?",

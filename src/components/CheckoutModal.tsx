@@ -230,7 +230,7 @@ export const CheckoutModal: React.FC = () => {
   }
   const cartTotal = subtotal - discountAmount;
   const hasFreeDeliveryProduct = cart.some(item => Boolean(item.product.isFreeDelivery) || Boolean(products.find((p: any) => p.id === item.product.id)?.isFreeDelivery));
-  const shippingCost = (hasFreeDeliveryProduct || subtotal >= siteSettings.freeShippingThreshold) ? 0 : 59;
+  const shippingCost = (hasFreeDeliveryProduct || subtotal >= siteSettings.freeShippingThreshold) ? 0 : 99;
   const codFee = 0;
   const discountRatio = subtotal > 0 ? (subtotal - discountAmount) / subtotal : 1;
   const gstAmount = Math.round(cart.reduce((sum, item) => {
