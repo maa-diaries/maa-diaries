@@ -232,11 +232,12 @@ export const CheckoutModal: React.FC = () => {
   const hasFreeDeliveryProduct = cart.some(item => Boolean(item.product.isFreeDelivery) || Boolean(products.find((p: any) => p.id === item.product.id)?.isFreeDelivery));
   const shippingCost = (hasFreeDeliveryProduct || subtotal >= siteSettings.freeShippingThreshold) ? 0 : 99;
   const codFee = 0;
-  const discountRatio = subtotal > 0 ? (subtotal - discountAmount) / subtotal : 1;
-  const gstAmount = Math.round(cart.reduce((sum, item) => {
-    const itemGstPercent = item.product.gstPercent ?? 5;
-    return sum + (item.product.price * item.quantity * discountRatio) * (itemGstPercent / 100);
-  }, 0));
+  const gstAmount = Math.round(
+      cart.reduce((sum, item) => {
+        const itemGstPercent = item.product.gstPercent ?? 5;
+        return sum + (item.product.price * item.quantity * itemGstPercent) / 100;
+      }, 0)
+    );
   const grandTotal = cartTotal + shippingCost + codFee + gstAmount;
 
   // Validate coupon minOrder in response to subtotal changes
