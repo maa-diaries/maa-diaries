@@ -809,12 +809,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     const cartTotal = subtotal - discountAmount;
-    const discountRatio = subtotal > 0 ? (subtotal - discountAmount) / subtotal : 1;
-    const gstAmount = Math.round(cart.reduce((sum, item) => {
-      const itemGstPercent = item.product.gstPercent ?? 5;
-      return sum + (item.product.price * item.quantity * discountRatio) * (itemGstPercent / 100);
-    }, 0));
-    const totalAmount = cartTotal + gstAmount + shipping.shippingCost;
+    const totalAmount = cartTotal + shipping.shippingCost;
 
     // Validate stock availability before creating order
     for (const item of cart) {

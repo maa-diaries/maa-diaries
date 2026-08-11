@@ -53,12 +53,7 @@ export const CartDrawer: React.FC = () => {
   const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   const discountAmount = Math.round((subtotal * discountPercent) / 100);
   const cartTotal = subtotal - discountAmount;
-  const discountRatio = subtotal > 0 ? (subtotal - discountAmount) / subtotal : 1;
-  const gstAmount = Math.round(cart.reduce((sum, item) => {
-    const itemGstPercent = item.product.gstPercent ?? 5;
-    return sum + (item.product.price * item.quantity * discountRatio) * (itemGstPercent / 100);
-  }, 0));
-  const total = cartTotal + gstAmount;
+  const total = cartTotal;
 
   const handleApplyCoupon = (e: React.FormEvent) => {
     e.preventDefault();
@@ -369,10 +364,6 @@ export const CartDrawer: React.FC = () => {
                   <span>- ₹{discountAmount.toLocaleString('en-IN')}</span>
                 </div>
               )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                <span>GST (5%)</span>
-                <span>₹{gstAmount.toLocaleString('en-IN')}</span>
-              </div>
               <hr style={{ border: 'none', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', margin: '4px 0' }} />
               <div style={{
                 display: 'flex',
